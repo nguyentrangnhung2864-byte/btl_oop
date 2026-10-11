@@ -30,4 +30,8 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 
     @Query("SELECT DISTINCT p.category FROM Place p ORDER BY p.category")
     List<String> findDistinctCategories();
+
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }

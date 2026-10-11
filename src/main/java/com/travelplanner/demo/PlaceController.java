@@ -3,6 +3,9 @@ package com.travelplanner.demo;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/places")
@@ -31,5 +34,22 @@ public class PlaceController {
     @GetMapping("/{id}")
     public Place getById(@PathVariable Long id) {
         return placeService.getById(id);
+    }
+
+    @PostMapping
+    public ResponseEntity<Place> create(@Valid @RequestBody PlaceRequest request) {
+        Place created = placeService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/{id}")
+    public Place update(@PathVariable Long id, @Valid @RequestBody PlaceRequest request) {
+        return placeService.update(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        placeService.delete(id);
     }
 }

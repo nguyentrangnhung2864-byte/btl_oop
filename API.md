@@ -175,15 +175,56 @@ Phản hồi `404 Not Found`:
 
 ```json
 {
-  "timestamp": "2026-10-09T15:30:00.000+00:00",
   "status": 404,
-  "error": "Not Found",
-  "path": "/api/places/999",
+  "message": "Không tìm thấy địa điểm có id = 999"
 }
 ```
 
 ---
+### Định dạng lỗi chung (áp dụng cho toàn bộ API)
 
+```json
+{
+  "status": 400,
+  "message": "Dữ liệu không hợp lệ",
+  "errors": {
+    "name": "Tên địa điểm không được để trống",
+    "region": "Khu vực phải là Miền Bắc, Miền Trung hoặc Miền Nam"
+  }
+}
+```
+
+- `status`: mã HTTP.
+- `message`: thông báo cho người dùng (tiếng Việt).
+- `errors`: chỉ có khi lỗi kiểm tra dữ liệu (400), khóa là tên trường.
+
+### 3.4. Thêm địa điểm
+
+`POST /api/places`
+
+Body (JSON), tất cả bắt buộc trừ `teaser`:
+
+| Trường | Quy tắc |
+|---|---|
+| `name` | Không rỗng, tối đa 255 ký tự, không trùng tên địa điểm khác (không phân biệt hoa thường và dấu) |
+| `city` | Không rỗng, tối đa 255 ký tự |
+| `region` | Chỉ nhận `Miền Bắc`, `Miền Trung` hoặc `Miền Nam` |
+| `category` | Không rỗng, tối đa 255 ký tự |
+| `teaser` | Tùy chọn, tối đa 500 ký tự |
+
+Phản hồi `201 Created`: địa điểm vừa tạo (có `id`). Lỗi: `400` (dữ liệu sai), `409` (trùng tên).
+
+### 3.5. Sửa địa điểm
+
+`PUT /api/places/{id}`
+
+Body giống mục 3.4 (gửi đủ tất cả trường). Phản hồi `200 OK`: địa điểm đã sửa. Lỗi: `400`, `404` (không có id), `409` (trùng tên).
+
+### 3.6. Xóa địa điểm
+
+`DELETE /api/places/{id}`
+
+Phản hồi `204 No Content` (không có nội dung). Lỗi: `404` (không có id), `409` (địa điểm đang được dùng trong lịch trình).
 ## 4. Danh sách 8 loại hình hiện có
 
 Thiên nhiên · Biển & đảo · Chùa & đền · Văn hóa - lịch sử · Bảo tàng · Chợ & mua sắm · Vui chơi & giải trí · Phố cổ & làng nghề
@@ -193,7 +234,9 @@ Thiên nhiên · Biển & đảo · Chùa & đền · Văn hóa - lịch sử ·
 | Mã | Ý nghĩa |
 |---|---|
 | `200` | Thành công |
+| `204` | Không có nội dung |
 | `404` | Không tìm thấy địa điểm theo `id` |
+| `409` | Bị trùng |
 
 ## 6. Lưu ý cho Module 2 và Module 3 (B, C)
 
@@ -216,6 +259,5 @@ const places = await res.json();
 
 | Chức năng | Endpoint dự kiến | Tuần |
 |---|---|---|
-| Thêm, sửa, xóa địa điểm | `POST /api/places`, `PUT /api/places/{id}`, `DELETE /api/places/{id}` | 4 |
 | Gợi ý địa điểm có chấm điểm | `POST /api/places/recommendations` | 5 |
 | AI giới thiệu địa điểm | `POST /api/places/{id}/ai-overview` | 6 |

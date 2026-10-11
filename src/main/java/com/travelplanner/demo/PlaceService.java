@@ -3,6 +3,7 @@ package com.travelplanner.demo;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 
@@ -30,6 +31,48 @@ public class PlaceService {
                 placeRepository.findDistinctRegions(),
                 placeRepository.findDistinctCities(),
                 placeRepository.findDistinctCategories());
+    }
+
+    public Place create(PlaceRequest request) {
+        String name = request.name().trim();
+        if (placeRepository.existsByNameIgnoreCase(name)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Địa điểm \"" + name + "\" đã tồn tại");
+        }
+        Place place = new Place();
+        applyRequest(place, request);
+        return placeRepository.save(place);
+    }
+
+    public Place update(Long id, PlaceRequest request) {
+        Place place = getById(id); // không có id thì tự báo 404
+        String name = request.name().trim();
+        if (placeRepository.existsByNameIgnoreCaseAndIdNot(name, id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Địa điểm \"" + name + "\" đã tồn tại");
+        }
+        applyRequest(place, request);
+        return placeRepository.save(place);
+    }
+
+    public void delete(Long id) {
+        Place place = getById(id);
+        try {
+            placeRepository.delete(place);
+        } catch (DataIntegrityViolationException e) {
+            // Xảy ra khi địa điểm đang được dùng trong lịch trình (Module 2)
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Địa điểm đang được dùng trong lịch trình, không thể xóa");
+        }
+    }
+
+    private void applyRequest(Place place, PlaceRequest request) {
+        place.setName(request.name().trim());
+        place.setCity(request.city().trim());
+        place.setRegion(request.region().trim());
+        place.setCategory(request.category().trim());
+        place.setTeaser(request.teaser() == null || request.teaser().isBlank()
+                ? null : request.teaser().trim());
     }
 
     // Chuỗi rỗng hoặc toàn dấu cách được coi như "không chọn"
