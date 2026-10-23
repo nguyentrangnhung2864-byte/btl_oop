@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sổ Tay Lịch Trình Việt Nam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<header class="hero">
+    <div class="container">
+        <h1>Sổ Tay Lịch Trình Việt Nam</h1>
+        <p>Khám phá địa điểm, lọc theo khu vực, tỉnh/thành phố và loại hình.</p>
+    </div>
+</header>
+
+<main class="container">
+    <div class="filters">
+        <input type="text" id="keyword" placeholder="Tìm theo tên địa điểm...">
+        <select id="region"><option value="">Tất cả khu vực</option></select>
+        <select id="city"><option value="">Tất cả tỉnh/thành phố</option></select>
+        <select id="category"><option value="">Tất cả loại hình</option></select>
+        <button id="reset-btn" class="reset-btn" hidden>Xóa lọc</button>
+    </div>
+
+    <p id="error" class="error" hidden></p>
+    <p id="status" class="muted"></p>
+    <div id="place-grid" class="place-grid"></div>
+</main>
+
+<!-- Cửa sổ chi tiết địa điểm -->
+<div id="modal-backdrop" class="modal-backdrop" hidden>
+    <div class="modal">
+        <button id="modal-close" class="close">×</button>
+        <div id="modal-media" class="modal-media"></div>
+        <div class="modal-body">
+            <div id="modal-tags" class="tags"></div>
+            <h2 id="modal-name"></h2>
+            <p id="modal-teaser"></p>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
