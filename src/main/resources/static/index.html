@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khám phá địa điểm | Sổ Tay Lịch Trình Việt Nam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <div class="app-main">
+        <!-- Banner đầu trang -->
+        <header class="hero">
+            <div class="wrap hero-wrap">
+                <div class="hero-text">
+                    <p class="hero-kicker">Khám phá Việt Nam</p>
+                    <h1>Đi đâu cho chuyến<br>phiêu lưu tiếp theo?</h1>
+                    <p class="hero-desc">Từ núi rừng hùng vĩ đến những bờ biển trong xanh — hành trình đáng nhớ của bạn bắt đầu tại đây.</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="wrap content">
+            <!-- Thanh tìm kiếm nổi -->
+            <div class="search-card">
+                <div class="search-field">
+            <span class="search-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+                    <input type="text" id="keyword" placeholder="Bạn muốn đi đâu?" aria-label="Tên địa điểm">
+                </div>
+                <div class="select-field">
+                    <label for="region">Khu vực</label>
+                    <select id="region"><option value="">Tất cả</option></select>
+                </div>
+                <div class="select-field">
+                    <label for="city">Tỉnh/Thành phố</label>
+                    <select id="city"><option value="">Tất cả</option></select>
+                </div>
+                <div class="select-field">
+                    <label for="category">Loại hình</label>
+                    <select id="category"><option value="">Tất cả</option></select>
+                </div>
+                <button id="reset-btn" class="reset-btn" title="Xóa lọc" aria-label="Xóa lọc" hidden>
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                </button>
+            </div>
+
+            <!-- Tiêu đề danh sách -->
+            <div class="results-head">
+                <div>
+                    <p class="kicker">Điểm đến nổi bật</p>
+                    <h2>Nơi nào đang chờ bạn?</h2>
+                </div>
+                <p id="status" class="result-count"></p>
+            </div>
+
+            <p id="error" class="error" hidden></p>
+            <div id="place-grid" class="place-grid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Cửa sổ chi tiết địa điểm -->
+<div id="modal-backdrop" class="modal-backdrop" hidden>
+    <div class="modal">
+        <button id="modal-close" class="close">×</button>
+        <div id="modal-media" class="modal-media"></div>
+        <div class="modal-body">
+            <div id="modal-tags" class="tags"></div>
+            <h2 id="modal-name"></h2>
+            <p id="modal-teaser"></p>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="/js/layout.js"></script>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
