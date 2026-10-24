@@ -1,0 +1,238 @@
+/* layout.css: khung chung cho mọi trang (nền, sidebar, banner đầu trang) */
+:root {
+    --bg-deep: #1e2b2e;
+    --bg-deep-2: #16211f;
+    --paper: #f3eddc;
+    --card: #fbf7ec;
+    --ink: #262019;
+    --ink-soft: #6b6250;
+    --gold: #b8862f;
+    --gold-light: #d9a94a;
+    --gold-soft: #f0e1be;
+    --gold-dark: #6b4f12;
+    --line: #dccfa8;
+    --red: #a6402d;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+}
+
+/* Bắt buộc, nếu thiếu thì thuộc tính hidden sẽ không ẩn được các phần tử có display riêng */
+[hidden] { display: none !important; }
+
+/* Biểu tượng SVG dùng chung: kích thước do phần tử chứa quyết định */
+.icon {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.app-shell { display: flex; min-height: 100vh; }
+.app-main { flex: 1; min-width: 0; background: var(--paper); }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+
+/* ===== Sidebar ===== */
+.sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 32px 16px 24px;
+    background: linear-gradient(180deg, var(--bg-deep), var(--bg-deep-2));
+    color: #e8e2d3;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 8px 28px;
+    color: inherit;
+    text-decoration: none;
+}
+.brand-logo {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    color: var(--gold-light);
+}
+.brand-logo .icon-box { width: 22px; height: 22px; }
+.brand-text strong {
+    display: block;
+    font-family: "Lora", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.25;
+    color: #fff;
+}
+.brand-text small {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--gold-light);
+}
+
+.menu { display: flex; flex-direction: column; gap: 10px; }
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    color: #e8e2d3;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+.menu-item:hover { background: rgba(255, 255, 255, 0.07); }
+.menu-icon { width: 22px; height: 22px; flex-shrink: 0; color: #9fb0ac; }
+.menu-text { flex: 1; min-width: 0; }
+.menu-text strong { display: block; font-size: 15px; font-weight: 600; line-height: 1.3; }
+.menu-text small { display: block; margin-top: 2px; font-size: 12px; color: #9fb0ac; }
+.menu-chevron { width: 18px; height: 18px; flex-shrink: 0; color: #7d8f8b; }
+
+/* Mục đang chọn */
+.menu-item.active { background: rgba(217, 169, 74, 0.18); }
+.menu-item.active .menu-icon,
+.menu-item.active .menu-chevron,
+.menu-item.active .menu-text strong { color: var(--gold-light); }
+.menu-item.active .menu-text small { color: rgba(217, 169, 74, 0.8); }
+
+/* ===== Banner đầu trang ===== */
+.hero {
+    position: relative;
+    overflow: hidden;
+    padding: 64px 0 112px;
+    background: linear-gradient(135deg, var(--bg-deep-2) 0%, var(--bg-deep) 55%, #2d4a4c 100%);
+    color: #fff;
+}
+/* Vòng tròn trang trí ở góc phải */
+.hero::after {
+    content: "";
+    position: absolute;
+    right: -70px;
+    bottom: -150px;
+    width: 360px;
+    height: 360px;
+    border: 1px solid rgba(217, 169, 74, 0.35);
+    border-radius: 50%;
+    box-shadow: 0 0 0 38px rgba(217, 169, 74, 0.05), 0 0 0 39px rgba(217, 169, 74, 0.2);
+    pointer-events: none;
+}
+/* Muốn có ảnh nền: đặt ảnh static/images/hero.jpg rồi thêm class has-photo vào thẻ header */
+.hero.has-photo {
+    background: linear-gradient(160deg, rgba(22, 33, 31, 0.88), rgba(30, 43, 46, 0.5)),
+    url("/images/hero.jpg") center / cover no-repeat;
+}
+
+.hero-wrap {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 32px;
+}
+.hero-text { max-width: 640px; }
+.hero-kicker {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 18px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+}
+.hero-kicker::before {
+    content: "";
+    width: 38px;
+    height: 1px;
+    background: var(--gold-light);
+}
+.hero h1 {
+    margin: 0 0 18px;
+    font-family: "Lora", Georgia, serif;
+    font-size: clamp(28px, 3.6vw, 45px);
+    font-weight: 600;
+    line-height: 1.12;
+    color: #fff;
+}
+.hero-desc { margin: 0; font-size: 16px; line-height: 1.7; color: #d4ddd9; }
+
+.hero-stat {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding-left: 22px;
+    border-left: 1px solid rgba(217, 169, 74, 0.5);
+}
+.hero-stat-icon { width: 22px; height: 22px; margin-top: 6px; color: var(--gold-light); }
+.hero-stat strong {
+    display: block;
+    font-family: "Lora", Georgia, serif;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--gold-light);
+}
+.hero-stat span {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    line-height: 1.5;
+    text-transform: uppercase;
+    color: #cfd9d5;
+}
+
+/* ===== Trang nội dung thường (dùng cho trang của B) ===== */
+.page { max-width: 1200px; margin: 0 auto; padding: 48px 48px 56px; }
+.page-title {
+    margin: 0 0 24px;
+    padding-bottom: 14px;
+    font-family: "Lora", Georgia, serif;
+    font-size: 26px;
+    font-weight: 700;
+    border-bottom: 3px solid var(--gold);
+}
+.page-desc { margin: 0 0 8px; font-size: 15px; color: var(--ink-soft); }
+.section-title {
+    margin: 28px 0 16px;
+    padding: 4px 0 4px 12px;
+    font-size: 16px;
+    font-weight: 700;
+    border-left: 3px solid var(--gold);
+}
+.muted { color: var(--ink-soft); font-size: 14px; }
+.error { color: var(--red); }
+
+/* ===== Màn hình nhỏ ===== */
+@media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: static; padding: 20px 16px; }
+    .sidebar-brand { padding-bottom: 16px; }
+    .menu { flex-direction: row; flex-wrap: wrap; }
+    .menu-item { flex: 1 1 220px; }
+    .wrap { padding: 0 18px; }
+    .page { padding: 32px 18px 40px; }
+    .hero { padding: 40px 0 96px; }
+    .hero-wrap { flex-direction: column; gap: 24px; }
+}

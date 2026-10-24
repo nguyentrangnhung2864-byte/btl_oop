@@ -80,7 +80,7 @@ async function loadPlaces() {
         renderPlaces(places);
         errorEl.hidden = true;
         statusEl.textContent =
-            places.length > 0 ? `${places.length} địa điểm` : "Không có địa điểm nào phù hợp.";
+            places.length > 0 ? `${places.length} điểm đến phù hợp` : "Chưa có điểm đến nào phù hợp.";
     } catch (e) {
         if (myId !== requestId) return;
         showError("Không tải được danh sách địa điểm");
