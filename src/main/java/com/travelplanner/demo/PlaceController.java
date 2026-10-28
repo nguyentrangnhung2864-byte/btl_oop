@@ -1,11 +1,11 @@
 package com.travelplanner.demo;
 
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/places")
@@ -13,9 +13,11 @@ import org.springframework.http.ResponseEntity;
 public class PlaceController {
 
     private final PlaceService placeService;
+    private final AiOverviewService aiOverviewService;
 
-    public PlaceController(PlaceService placeService) {
+    public PlaceController(PlaceService placeService, AiOverviewService aiOverviewService) {
         this.placeService = placeService;
+        this.aiOverviewService = aiOverviewService;
     }
 
     @GetMapping
@@ -51,5 +53,10 @@ public class PlaceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         placeService.delete(id);
+    }
+
+    @PostMapping("/{id}/ai-overview")
+    public AiOverviewResponse aiOverview(@PathVariable Long id) {
+        return aiOverviewService.getAiOverview(id);
     }
 }

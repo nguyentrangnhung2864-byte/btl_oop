@@ -20,3 +20,13 @@ export async function fetchFilterOptions() {
     if (!res.ok) throw new Error("Không tải được bộ lọc");
     return res.json();
 }
+
+// Nhờ AI giới thiệu địa điểm (refresh = true để tạo lại)
+export async function fetchAiOverview(id, refresh = false) {
+    const res = await fetch(`${BASE_URL}/${id}/ai-overview?refresh=${refresh}`, {
+        method: "POST",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || "Không tạo được giới thiệu bằng AI");
+    return data;
+}

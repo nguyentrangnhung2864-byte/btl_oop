@@ -7,3 +7,5 @@ spring.datasource.password=
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 
+gemini.api-key=${GEMINI_API_KEY:}
+gemini.model=gemini-3.5-flash-lite

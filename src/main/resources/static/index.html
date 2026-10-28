@@ -57,8 +57,15 @@
                 <div>
                     <p class="kicker">Điểm đến nổi bật</p>
                     <h2>Nơi nào đang chờ bạn?</h2>
+                    <p id="status" class="result-count"></p>
                 </div>
-                <p id="status" class="result-count"></p>
+                <button id="trip-btn" class="trip-btn" type="button">
+            <span class="trip-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </span>
+                    Danh sách của tôi
+                    <span id="trip-count" class="trip-count zero">0</span>
+                </button>
             </div>
 
             <p id="error" class="error" hidden></p>
@@ -76,8 +83,42 @@
             <div id="modal-tags" class="tags"></div>
             <h2 id="modal-name"></h2>
             <p id="modal-teaser"></p>
+            <button id="select-btn" class="select-btn" type="button">+ Thêm vào danh sách</button>
+            <div class="ai-box">
+                <div class="ai-head">✨ Giới thiệu bằng AI</div>
+                <p id="ai-text" class="ai-text" hidden></p>
+                <p id="ai-error" class="error" hidden></p>
+                <button id="ai-btn" class="ai-btn" type="button">Giới thiệu bằng AI</button>
+                <p class="ai-note">Nội dung do AI tạo, có thể chưa chính xác. Hãy kiểm tra lại thông tin trước khi đi.</p>
+            </div>
         </div>
     </div>
+</div>
+
+<!-- Ngăn kéo: danh sách địa điểm đã chọn -->
+<div id="trip-backdrop" class="trip-backdrop" hidden>
+    <aside class="trip-panel">
+        <div class="trip-head">
+            <div>
+                <p class="kicker">Chuyến đi của bạn</p>
+                <h2>Danh sách đã chọn</h2>
+            </div>
+            <button id="trip-close" class="trip-close" type="button" aria-label="Đóng">×</button>
+        </div>
+        <p class="trip-hint">Chọn xong thì sang trang Lập lịch trình để xếp các địa điểm này vào từng ngày.</p>
+
+        <div id="trip-list" class="trip-list"></div>
+        <div id="trip-empty" class="trip-empty" hidden>
+            <p>Chưa chọn địa điểm nào.</p>
+            <p class="muted">Bấm vào một địa điểm rồi chọn "Thêm vào danh sách".</p>
+        </div>
+
+        <div class="trip-foot">
+            <button id="trip-more" class="trip-action" type="button">+ Thêm địa điểm khác</button>
+            <button id="trip-clear" class="trip-action danger" type="button">Xóa tất cả</button>
+            <a id="trip-go" class="trip-action primary" href="/itinerary.html">Sang trang lập lịch trình →</a>
+        </div>
+    </aside>
 </div>
 
 <script type="module" src="/js/layout.js"></script>
