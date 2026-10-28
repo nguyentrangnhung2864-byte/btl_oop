@@ -1,14 +1,16 @@
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/itinerary.css">
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lập lịch trình | Sổ Tay Lịch Trình Việt Nam</title>
+    <title>  Lịch Trình | Sổ Tay Lịch Trình Việt Nam</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/layout.css">
-    <!-- B: thêm file CSS riêng của module 2 ở đây, ví dụ /css/itinerary.css -->
+    <link rel="stylesheet" href="/css/itinerary.css">
 </head>
 <body>
 <div class="app-shell">
@@ -16,20 +18,157 @@
 
     <div class="app-main">
         <header class="hero">
-            <div class="container">
+            <div class="container sch-hero-split">
                 <h1>Lập lịch trình</h1>
-                <p>Chọn địa điểm, xếp vào từng ngày và kiểm tra trùng giờ.</p>
+                <div class="sch-overview">
+                    <div class="sch-ov-title">Tổng quan chuyến đi</div>
+                    <div class="sch-ov-stats">
+                        <div><strong id="schOvDays">0</strong> ngày</div>
+                        <div><strong id="schOvPlaces">0</strong> địa điểm</div>
+                    </div>
+                    <label class="sch-start">
+                        <span>Khởi hành</span>
+                        <input type="date" id="schStartDate">
+                    </label>
+                </div>
             </div>
         </header>
 
         <main class="container">
-            <!-- B: viết giao diện module 2 trong thẻ main này -->
-            <p class="muted">Chức năng đang được phát triển.</p>
+            <div id="schMessage" class="sch-message" hidden></div>
+
+            <div class="sch-tabsbar">
+                <div id="schTabs" class="sch-tabs"></div>
+                <button type="button" id="schOpenSaved" class="sch-ghost"> Lịch trình đã lưu</button>
+                <button type="button" id="schOpenAi" class="sch-ai"> Gợi ý lịch trình</button>
+            </div>
+            <p id="schMoveHint" class="sch-hint" hidden>Kéo các ngày để đổi vị trí, bấm "Xong" khi hoàn tất.</p>
+
+            <section id="schDaySection" hidden>
+                <div class="sch-toolbar">
+                    <h2 id="schDayTitle"></h2>
+                    <button type="button" id="schUndo" class="sch-ghost sch-icon-btn" disabled title="Hoàn tác" aria-label="Hoàn tác">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+                    </button>
+                </div>
+
+                <div class="sch-layout">
+                    <div class="sch-left">
+                        <p id="schStatus" class="sch-status"></p>
+                        <ul id="schList" class="sch-list"></ul>
+                        <button type="button" id="schOpenForm" class="sch-add-item"
+                                title="Thêm địa điểm" aria-label="Thêm địa điểm">+</button>
+                    </div>
+
+                    <aside class="sch-side">
+                        <div class="sch-panel">
+                            <h4 class="sch-side-title">Lịch trình trong ngày</h4>
+                            <div id="schTimeline" class="sch-timeline"></div>
+                        </div>
+                        <div id="schDayInfo" class="sch-dayinfo"></div>
+                    </aside>
+                </div>
+            </section>
+
+            <p id="schEmptyDays" class="sch-status" hidden>Chưa có ngày nào. Bấm dấu + để thêm ngày.</p>
         </main>
     </div>
 </div>
 
+<!-- Menu khi nhấn giữ một ngày -->
+<div id="schMenu" class="sch-menu" hidden>
+    <button type="button" id="schMenuMove">↔ Di chuyển</button>
+    <button type="button" id="schMenuDelete" class="danger">🗑 Xóa ngày</button>
+</div>
+
+<!-- Bảng thêm / chỉnh sửa địa điểm -->
+<dialog id="schDialog" class="sch-dialog">
+    <form id="schForm" class="sch-form">
+        <h3 id="schFormTitle">Thêm địa điểm</h3>
+        <label class="sch-field">
+            <span>Địa điểm</span>
+            <select id="schPlace" required></select>
+        </label>
+        <div class="sch-row">
+            <div class="sch-field">
+                <span>Giờ bắt đầu (0-24h)</span>
+                <div class="sch-wheels">
+                    <div id="schHour" class="sch-wheel"></div>
+                    <span class="sch-colon">:</span>
+                    <div id="schMinute" class="sch-wheel"></div>
+                    <div class="sch-wheel-mark"></div>
+                </div>
+            </div>
+            <label class="sch-field">
+                <span>Thời lượng (giờ)</span>
+                <input type="number" id="schDuration" min="0.5" step="0.5" value="1" required>
+            </label>
+        </div>
+        <label class="sch-field">
+            <span>Ghi chú</span>
+            <textarea id="schNote" rows="3" maxlength="500" placeholder="Ví dụ: mang áo mưa, đã đặt vé..."></textarea>
+        </label>
+        <p id="schFormError" class="sch-form-error" hidden></p>
+        <div class="sch-form-actions">
+            <button type="button" id="schCancel" class="sch-ghost">Hủy</button>
+            <button type="submit" id="schSubmit" class="sch-btn">Thêm</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- Bảng chi tiết địa điểm -->
+<dialog id="schDetail" class="sch-dialog">
+    <div class="sch-form">
+        <div id="schDetailBody"></div>
+        <div class="sch-form-actions">
+            <button type="button" id="schDetailClose" class="sch-ghost">Đóng</button>
+        </div>
+    </div>
+</dialog>
+<!-- Bảng gợi ý lịch trình bằng AI -->
+<dialog id="schAiDialog" class="sch-dialog sch-dialog-wide">
+    <div class="sch-form">
+        <h3> Gợi ý lịch trình</h3>
+        <div class="sch-row">
+            <label class="sch-field">
+                <span>Thành phố</span>
+                <select id="schAiCity"><option value="">Tất cả</option></select>
+            </label>
+            <label class="sch-field">
+                <span>Số ngày (1-5)</span>
+                <input type="number" id="schAiDays" min="1" max="5" value="2">
+            </label>
+        </div>
+        <label class="sch-field">
+            <span>Mong muốn (không bắt buộc)</span>
+            <textarea id="schAiPrefs" rows="2" maxlength="300" placeholder="Ví dụ: thích ẩm thực, đi nhẹ nhàng, có trẻ nhỏ..."></textarea>
+        </label>
+        <p id="schAiStatus" class="sch-status"></p>
+        <div id="schAiResult" class="sch-ai-result"></div>
+        <div class="sch-form-actions">
+            <button type="button" id="schAiClose" class="sch-ghost">Đóng</button>
+            <button type="button" id="schAiGenerate" class="sch-btn">Tạo gợi ý</button>
+            <button type="button" id="schAiApply" class="sch-btn" hidden>Áp dụng</button>
+        </div>
+    </div>
+</dialog>
+<!-- Bảng lưu và mở lại lịch trình -->
+<dialog id="schSavedDialog" class="sch-dialog sch-dialog-wide">
+    <div class="sch-form">
+        <h3>Lịch trình đã lưu</h3>
+        <p class="sch-hint" style="margin:0">Lịch trình hiện tại luôn tự lưu. "Lưu" sẽ tạo thêm một bản có tên để mở lại sau.</p>
+        <div class="sch-save-row">
+            <input type="text" id="schSaveName" maxlength="100" placeholder="Đặt tên cho lịch trình hiện tại...">
+            <button type="button" id="schSaveBtn" class="sch-btn">Lưu</button>
+        </div>
+        <p id="schSavedStatus" class="sch-status"></p>
+        <ul id="schSavedList" class="sch-saved-list"></ul>
+        <div class="sch-form-actions">
+            <button type="button" id="schSavedClose" class="sch-ghost">Đóng</button>
+        </div>
+    </div>
+</dialog>
 <script type="module" src="/js/layout.js"></script>
-<!-- B: thêm file JS riêng của module 2 ở đây, ví dụ /js/itinerary.js -->
+<script src="/js/itinerary.js"></script>
 </body>
 </html>

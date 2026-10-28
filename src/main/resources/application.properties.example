@@ -2,7 +2,7 @@ spring.application.name=demo
 
 spring.datasource.url=jdbc:mysql://localhost:3306/travel_planner
 spring.datasource.username=root
-spring.datasource.password=
+spring.datasource.password=Th191ao@
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
