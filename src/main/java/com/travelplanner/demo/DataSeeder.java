@@ -21,11 +21,19 @@ public class DataSeeder implements CommandLineRunner {
     // Chạy 1 lần mỗi khi project khởi động xong
     @Override
     public void run(String... args) {
-        if (placeRepository.count() > 0) {
-            return; // Đã có dữ liệu thì không nạp lại
+        // Bảng trống thì nạp 30 địa điểm mẫu
+        if (placeRepository.count() == 0) {
+            runScript("data.sql");
         }
+        // Địa điểm nào chưa có tọa độ thì bổ sung (không ghi đè tọa độ đã có)
+        if (placeRepository.existsByLatitudeIsNull()) {
+            runScript("place-coordinates.sql");
+        }
+    }
+
+    private void runScript(String fileName) {
         ResourceDatabasePopulator populator =
-                new ResourceDatabasePopulator(new ClassPathResource("data.sql"));
+                new ResourceDatabasePopulator(new ClassPathResource(fileName));
         populator.setSqlScriptEncoding("UTF-8");
         populator.execute(dataSource);
     }
