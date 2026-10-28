@@ -34,4 +34,6 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
     boolean existsByNameIgnoreCase(String name);
 
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
+    boolean existsByLatitudeIsNull();
 }

@@ -23,6 +23,8 @@ public record PlaceRequest(
         String category,
 
         @Size(max = 500, message = "Mô tả tối đa 500 ký tự")
-        String teaser
+        String teaser,
+        Double latitude,
+        Double longitude
 ) {
 }

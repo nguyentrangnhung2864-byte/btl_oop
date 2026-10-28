@@ -23,6 +23,10 @@ public class Place {
     @Column(length = 500)
     private String teaser;
 
+    private Double latitude;   // vĩ độ
+
+    private Double longitude;  // kinh độ
+
     // Bắt buộc phải có constructor rỗng để JPA hoạt động
     public Place() {
     }
@@ -75,4 +79,21 @@ public class Place {
     public void setTeaser(String teaser) {
         this.teaser = teaser;
     }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
 }
