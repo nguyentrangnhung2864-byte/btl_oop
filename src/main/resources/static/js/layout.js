@@ -2,6 +2,7 @@
 const ICONS = {
     compass: '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    bookmark: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
     chevron: '<polyline points="9 18 15 12 9 6"/>',
 };
 
@@ -13,6 +14,7 @@ function icon(name) {
 const MENU = [
     { href: "/index.html", icon: "compass", title: "Khám phá địa điểm", subtitle: "Tìm cảm hứng mới" },
     { href: "/itinerary.html", icon: "calendar", title: "Lập lịch trình", subtitle: "Tạo chuyến đi của bạn" },
+    { href: "/saved.html", icon: "bookmark", title: "Các lịch trình đã tạo", subtitle: "Xem lại và chỉnh sửa" },
 ];
 
 // Mở "/" thì coi như đang ở "/index.html"
