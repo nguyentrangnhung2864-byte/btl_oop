@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ScheduleItemService {
@@ -22,13 +23,16 @@ public class ScheduleItemService {
     private final DayRepository dayRepository;
     private final ScheduleItemRepository itemRepository;
     private final PlaceRepository placeRepository;
+    private final ScheduleValidationService validationService;
 
     public ScheduleItemService(DayRepository dayRepository,
                                ScheduleItemRepository itemRepository,
-                               PlaceRepository placeRepository) {
+                               PlaceRepository placeRepository,
+                               ScheduleValidationService validationService) {
         this.dayRepository = dayRepository;
         this.itemRepository = itemRepository;
         this.placeRepository = placeRepository;
+        this.validationService = validationService;
     }
 
     @Transactional(readOnly = true)
@@ -37,13 +41,15 @@ public class ScheduleItemService {
             throw notFound("Không tìm thấy ngày với id " + dayId);
         }
         List<ScheduleItem> items = itemRepository.findByDay_IdOrderByStartTimeAsc(dayId);
+        Set<Long> conflictIds = validationService.findConflictIds(items);
         List<ScheduleItemResponse> result = new ArrayList<>();
         ScheduleItem previous = null;
         for (ScheduleItem item : items) {
             Double km = previous == null ? null : GeoUtil.distanceKm(
                     previous.getPlace().getLatitude(), previous.getPlace().getLongitude(),
                     item.getPlace().getLatitude(), item.getPlace().getLongitude());
-            result.add(toResponse(item, km));
+            String travelWarning = validationService.checkTravel(previous, item, km);
+            result.add(toResponse(item, km, conflictIds.contains(item.getId()), travelWarning));
             previous = item;
         }
         return result;
@@ -102,10 +108,13 @@ public class ScheduleItemService {
 
     // Dùng cho thêm, sửa: các thao tác này không tính khoảng cách
     private ScheduleItemResponse toResponse(ScheduleItem item) {
-        return toResponse(item, null);
+        itemRepository.flush(); // đảm bảo thay đổi vừa lưu đã nằm trong database trước khi kiểm tra
+        boolean conflict = validationService.findConflictIdsByDay(item.getDay().getId()).contains(item.getId());
+        return toResponse(item, null, conflict, null);
     }
 
-    private ScheduleItemResponse toResponse(ScheduleItem item, Double distanceFromPreviousKm) {
+    private ScheduleItemResponse toResponse(ScheduleItem item, Double distanceFromPreviousKm,
+                                            boolean conflict, String travelWarning) {
         Place place = item.getPlace();
         return new ScheduleItemResponse(
                 item.getId(),
@@ -119,7 +128,12 @@ public class ScheduleItemService {
                 item.getDurationHours(),
                 item.getNote(),
                 item.getTransport(),
-                distanceFromPreviousKm);
+                distanceFromPreviousKm,
+                conflict,
+                place.getOpenTime(),
+                place.getCloseTime(),
+                validationService.isOutsideOpeningHours(item),
+                travelWarning);
     }
 
     @Transactional

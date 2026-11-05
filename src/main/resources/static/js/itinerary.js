@@ -415,6 +415,19 @@ function fillPlaceSelect(includePlaceId) {
     });
 }
 
+function renderConflictBanner(items) {
+    const banner = $('schConflictBanner');
+    const lines = [];
+    const conflicts = items.filter(i => i.conflict).length;
+    const outside = items.filter(i => i.outsideOpeningHours).length;
+    const travel = items.filter(i => i.travelWarning).length;
+    if (conflicts) lines.push('⚠ ' + conflicts + ' địa điểm bị trùng khung giờ.');
+    if (outside) lines.push('⚠ ' + outside + ' địa điểm nằm ngoài giờ mở cửa.');
+    if (travel) lines.push('⚠ ' + travel + ' chặng di chuyển chưa hợp lý (xem cảnh báo giữa các thẻ).');
+    banner.hidden = lines.length === 0;
+    banner.textContent = lines.join('\n');
+}
+
 async function loadItems() {
     const status = $('schStatus');
     status.textContent = 'Đang tải...';
@@ -430,6 +443,7 @@ async function loadItems() {
             if (prev && item.distanceFromPreviousKm != null) list.appendChild(renderLeg(prev, item));
             list.appendChild(renderItem(item, index));
         });
+        renderConflictBanner(state.items);
         renderTimeline(state.items);
         renderDayInfo(state.items);
         applySelection(false);
@@ -473,6 +487,12 @@ function renderItem(item, index) {
         badge.textContent = 'Trùng giờ';
         name.appendChild(badge);
     }
+    if (item.outsideOpeningHours) {
+        const badge = document.createElement('span');
+        badge.className = 'sch-badge sch-badge-warn';
+        badge.textContent = 'Ngoài giờ mở cửa';
+        name.appendChild(badge);
+    }
     const addr = document.createElement('div');
     addr.className = 'sch-meta';
     addr.textContent = '📍 ' + addressOf(item);
@@ -480,6 +500,12 @@ function renderItem(item, index) {
     meta.className = 'sch-meta';
     meta.textContent = item.category + ' · ' + item.durationHours + ' giờ';
     info.append(name, addr, meta);
+    if (item.openTime && item.closeTime) {
+        const hours = document.createElement('div');
+        hours.className = 'sch-meta' + (item.outsideOpeningHours ? ' sch-hours-bad' : '');
+        hours.textContent = '🕒 Giờ mở cửa: ' + item.openTime.slice(0, 5) + ' – ' + item.closeTime.slice(0, 5);
+        info.appendChild(hours);
+    }
     if (item.note) {
         const noteLine = document.createElement('div');
         noteLine.className = 'sch-note-line';
@@ -1134,6 +1160,12 @@ function renderLeg(prev, next) {
     chip.title = 'Chọn phương tiện';
     chip.onclick = e => { e.stopPropagation(); openTransportMenu(prev, next, chip); };
     li.appendChild(chip);
+    if (next.travelWarning) {
+        const warn = document.createElement('div');
+        warn.className = 'sch-leg-warn';
+        warn.textContent = '⚠ ' + next.travelWarning;
+        li.appendChild(warn);
+    }
     return li;
 }
 /* ---------- Chọn phương tiện giữa hai địa điểm ---------- */
