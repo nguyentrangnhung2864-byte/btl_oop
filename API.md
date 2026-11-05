@@ -276,3 +276,21 @@ Không có endpoint mới. Mỗi mục lịch trình do `GET /api/days/{dayId}/i
 **Quy tắc:** hai khung giờ `[bắt đầu, kết thúc)` được coi là trùng khi `startA < endB` và `startB < endA`. Hai mục nối tiếp nhau (kết thúc đúng lúc mục kia bắt đầu) không bị tính là trùng. Cả hai mục trong một cặp trùng đều có `conflict = true`.
 
 Ví dụ: 08:00 (2 giờ) và 09:00 (1,5 giờ) trùng nhau; 08:00 (2 giờ) và 10:00 (1 giờ) không trùng.
+
+## Bổ sung: kiểm tra giờ mở cửa và phương tiện
+
+Mỗi mục lịch trình trả về thêm các trường:
+
+| Trường | Kiểu | Ý nghĩa |
+|---|---|---|
+| `openTime`, `closeTime` | giờ (`"07:00:00"`) hoặc `null` | Giờ mở/đóng cửa của địa điểm. `null` = không giới hạn giờ |
+| `outsideOpeningHours` | boolean | `true` nếu khung giờ tham quan không nằm trọn trong giờ mở cửa |
+| `travelWarning` | chuỗi hoặc `null` | Cảnh báo về chặng di chuyển **từ địa điểm liền trước tới mục này** (chỉ có khi mục trước đã chọn phương tiện và có khoảng cách) |
+
+**Quy tắc phương tiện** (phương tiện được lưu ở mục phía trước, xem `PATCH /api/items/{id}/transport`):
+- Máy bay: cảnh báo nếu quãng đường dưới 100 km.
+- Xe đạp: cảnh báo nếu quãng đường trên 50 km.
+- Thời gian di chuyển = quãng đường chim bay × 1,3 ÷ tốc độ trung bình (xe đạp 12, xe máy 35, ô tô 40, xe buýt 30, tàu hỏa 55, thuyền 20 km/h; máy bay 700 km/h cộng 2 giờ thủ tục). Nếu khoảng trống giữa hai mục ngắn hơn thời gian này thì cảnh báo "không kịp".
+- Hai mục đã trùng giờ thì không báo thêm lỗi phương tiện.
+
+Giờ mở cửa mẫu nằm trong `src/main/resources/place-hours.sql` (số liệu gần đúng, cần đối chiếu lại).

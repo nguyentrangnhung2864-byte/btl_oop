@@ -48,7 +48,8 @@ public class ScheduleItemService {
             Double km = previous == null ? null : GeoUtil.distanceKm(
                     previous.getPlace().getLatitude(), previous.getPlace().getLongitude(),
                     item.getPlace().getLatitude(), item.getPlace().getLongitude());
-            result.add(toResponse(item, km, conflictIds.contains(item.getId())));
+            String travelWarning = validationService.checkTravel(previous, item, km);
+            result.add(toResponse(item, km, conflictIds.contains(item.getId()), travelWarning));
             previous = item;
         }
         return result;
@@ -109,10 +110,11 @@ public class ScheduleItemService {
     private ScheduleItemResponse toResponse(ScheduleItem item) {
         itemRepository.flush(); // đảm bảo thay đổi vừa lưu đã nằm trong database trước khi kiểm tra
         boolean conflict = validationService.findConflictIdsByDay(item.getDay().getId()).contains(item.getId());
-        return toResponse(item, null, conflict);
+        return toResponse(item, null, conflict, null);
     }
 
-    private ScheduleItemResponse toResponse(ScheduleItem item, Double distanceFromPreviousKm, boolean conflict) {
+    private ScheduleItemResponse toResponse(ScheduleItem item, Double distanceFromPreviousKm,
+                                            boolean conflict, String travelWarning) {
         Place place = item.getPlace();
         return new ScheduleItemResponse(
                 item.getId(),
@@ -127,7 +129,11 @@ public class ScheduleItemService {
                 item.getNote(),
                 item.getTransport(),
                 distanceFromPreviousKm,
-                conflict);
+                conflict,
+                place.getOpenTime(),
+                place.getCloseTime(),
+                validationService.isOutsideOpeningHours(item),
+                travelWarning);
     }
 
     @Transactional

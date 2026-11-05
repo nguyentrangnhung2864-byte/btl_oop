@@ -259,5 +259,8 @@ main.container {
 .sch-ai-day li { margin-bottom: 4px; font-size: 14px; }
 .sch-ai-note { color: #666; font-size: 12px; }
 .sch-status.error { color: #b3261e; }
-.sch-conflict-banner { margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--red, #a6402d); background: #f7e8e1; color: var(--red, #a6402d); font-size: 14px; font-weight: 500; }
+.sch-conflict-banner { white-space: pre-line; margin: 0 0 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--red, #a6402d); background: #f7e8e1; color: var(--red, #a6402d); font-size: 14px; font-weight: 500; }
 .sch-conflict-banner[hidden] { display: none; }
+.sch-badge-warn { background: #b8862f; }
+.sch-hours-bad { color: #a6402d; font-weight: 500; }
+.sch-leg-warn { margin-top: 4px; font-size: 12px; color: #a6402d; max-width: 360px; }
