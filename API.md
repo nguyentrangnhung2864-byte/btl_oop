@@ -261,3 +261,18 @@ const places = await res.json();
 |---|---|---|
 | Gợi ý địa điểm có chấm điểm | `POST /api/places/recommendations` | 5 |
 | AI giới thiệu địa điểm | `POST /api/places/{id}/ai-overview` | 6 |
+---
+
+# API Module 3: Kiểm tra trùng giờ
+
+Người phụ trách: Thành viên C
+
+Không có endpoint mới. Mỗi mục lịch trình do `GET /api/days/{dayId}/items`, `POST /api/days/{dayId}/items` và `PUT /api/items/{id}` trả về đều có thêm trường:
+
+| Trường | Kiểu | Ý nghĩa |
+|---|---|---|
+| `conflict` | boolean | `true` nếu khung giờ của mục này chồng lên một mục khác trong cùng ngày |
+
+**Quy tắc:** hai khung giờ `[bắt đầu, kết thúc)` được coi là trùng khi `startA < endB` và `startB < endA`. Hai mục nối tiếp nhau (kết thúc đúng lúc mục kia bắt đầu) không bị tính là trùng. Cả hai mục trong một cặp trùng đều có `conflict = true`.
+
+Ví dụ: 08:00 (2 giờ) và 09:00 (1,5 giờ) trùng nhau; 08:00 (2 giờ) và 10:00 (1 giờ) không trùng.

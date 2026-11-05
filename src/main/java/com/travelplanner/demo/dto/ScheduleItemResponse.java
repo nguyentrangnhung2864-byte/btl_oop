@@ -14,6 +14,7 @@ public record ScheduleItemResponse(
         double durationHours,
         String note,
         String transport,
-        Double distanceFromPreviousKm
+        Double distanceFromPreviousKm,
+        boolean conflict
 ) {
 }

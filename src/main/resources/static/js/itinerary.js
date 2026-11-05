@@ -415,6 +415,14 @@ function fillPlaceSelect(includePlaceId) {
     });
 }
 
+function renderConflictBanner(items) {
+    const banner = $('schConflictBanner');
+    const count = items.filter(i => i.conflict).length;
+    banner.hidden = count === 0;
+    banner.textContent = count === 0 ? '' :
+        '⚠ Có ' + count + ' địa điểm bị trùng khung giờ trong ngày này. Hãy sửa giờ bắt đầu hoặc thời lượng.';
+}
+
 async function loadItems() {
     const status = $('schStatus');
     status.textContent = 'Đang tải...';
@@ -430,6 +438,7 @@ async function loadItems() {
             if (prev && item.distanceFromPreviousKm != null) list.appendChild(renderLeg(prev, item));
             list.appendChild(renderItem(item, index));
         });
+        renderConflictBanner(state.items);
         renderTimeline(state.items);
         renderDayInfo(state.items);
         applySelection(false);
