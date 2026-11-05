@@ -15,6 +15,12 @@ public class DayController {
         this.dayService = dayService;
     }
 
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAllDays() {
+        dayService.deleteAllDays();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DayResponse createDay() {

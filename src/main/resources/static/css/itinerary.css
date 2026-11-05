@@ -199,6 +199,35 @@ main.container {
 .sch-saved-meta { color: var(--ink-soft, #6b6250); font-size: 12px; }
 .sch-saved-actions { display: flex; gap: 6px; flex: none; }
 
+.sch-leg { margin: -4px 0 10px 70px; font-size: 12px; color: var(--ink-soft, #6b6250); }
+/* Dấu + dính ở mép dưới thẻ đang chọn */
+.sch-item.selected { margin-bottom: 26px; }
+.sch-transport-plus { display: none; position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%); width: 30px; height: 30px; z-index: 3;
+    font-size: 0; border: 0; border-radius: 50%; padding: 0; background: var(--gold, #b8862f); cursor: pointer; box-shadow: 0 2px 8px rgba(184, 134, 47, .45); }
+.sch-item.selected .sch-transport-plus { display: block; }
+.sch-transport-plus::before, .sch-transport-plus::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 2px; }
+.sch-transport-plus::before { width: 13px; height: 2.5px; }
+.sch-transport-plus::after { width: 2.5px; height: 13px; }
+
+/* Nhãn phương tiện và khoảng cách giữa hai thẻ */
+.sch-leg { margin: -4px 0 10px 70px; }
+.sch-leg-chip { padding: 3px 10px; border: 1px dashed var(--line, #dccfa8); border-radius: 12px; background: var(--card, #fbf7ec); color: var(--ink-soft, #6b6250); font: inherit; font-size: 12px; cursor: pointer; }
+.sch-leg-chip:hover { border-color: var(--gold, #b8862f); color: var(--ink, #262019); }
+
+/* Menu chọn phương tiện */
+.sch-transport-info { padding: 10px 14px; max-width: 240px; font-size: 12px; line-height: 1.4; white-space: pre-line; color: var(--ink-soft, #6b6250); border-bottom: 1px solid #e9dfc7; }
+.sch-message.ok { background: #e6f4ea; color: #1e7e34; }
+/* Bảng chọn địa điểm cho gợi ý AI */
+.sch-pick { position: relative; }
+.sch-pick-btn { width: 100%; text-align: left; padding: 8px; border: 1px solid var(--line, #dccfa8); border-radius: 6px; background: var(--card, #fbf7ec); font: inherit; cursor: pointer; }
+.sch-pick-btn::after { content: '▾'; float: right; }
+.sch-pick-panel { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); max-height: 240px; overflow-y: auto; background: var(--card, #fbf7ec); border: 1px solid var(--line, #dccfa8); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+.sch-pick-panel[hidden] { display: none; }
+.sch-pick-tools { display: flex; gap: 14px; padding: 8px 12px; border-bottom: 1px solid var(--line, #dccfa8); position: sticky; top: 0; background: var(--card, #fbf7ec); }
+.sch-pick-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; }
+.sch-pick-row:hover { background: var(--paper, #f3eddc); }
+.sch-pick-row input { flex: none; width: 18px; height: 18px; padding: 0; border: 0; }
+.sch-pick-row small { margin-left: auto; color: var(--ink-soft, #6b6250); }
 /* ===== Điện thoại (khối này phải nằm cuối file) ===== */
 @media (max-width: 600px) {
     :root {

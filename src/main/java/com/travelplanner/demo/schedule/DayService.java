@@ -38,6 +38,12 @@ public class DayService {
     private DayResponse toResponse(Day day) {
         return new DayResponse(day.getId(), day.getDayNumber(), day.getItems().size());
     }
+
+    @Transactional
+    public void deleteAllDays() {
+        dayRepository.deleteAll();
+    }
+
     @Transactional
     public void deleteDay(Long id) {
         if (!dayRepository.existsById(id)) {

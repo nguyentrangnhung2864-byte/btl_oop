@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 public class SuggestionService {
@@ -35,11 +37,13 @@ public class SuggestionService {
     private final RestClient restClient;
     private final String apiKey;
     private final String model;
+    private final String fallbackModel;
 
     public SuggestionService(PlaceRepository placeRepository,
                              ObjectMapper objectMapper,
                              @Value("${gemini.api-key:}") String apiKey,
-                             @Value("${gemini.model:gemini-2.5-flash}") String model) {
+                             @Value("${gemini.model:gemini-2.5-flash}") String model,
+                             @Value("${gemini.fallback-model:}") String fallbackModel) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5000);
         factory.setReadTimeout(60000);
@@ -51,6 +55,7 @@ public class SuggestionService {
         this.objectMapper = objectMapper;
         this.apiKey = apiKey;
         this.model = model;
+        this.fallbackModel = fallbackModel;
     }
 
     public SuggestionResponse suggest(SuggestionRequest request) {
@@ -60,7 +65,9 @@ public class SuggestionService {
         }
 
         String city = request.city() == null ? "" : request.city().trim();
+        Set<Long> wanted = request.placeIds() == null ? Set.of() : new HashSet<>(request.placeIds());
         List<Place> places = placeRepository.findAll().stream()
+                .filter(p -> wanted.isEmpty() || wanted.contains(p.getId()))
                 .filter(p -> city.isEmpty() || city.equalsIgnoreCase(p.getCity()))
                 .limit(MAX_PLACES)
                 .toList();
@@ -106,31 +113,68 @@ public class SuggestionService {
         Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
                 "generationConfig", Map.of("responseMimeType", "application/json", "temperature", 0.7));
-        try {
-            GeminiResponse res = restClient.post()
-                    .uri("/models/{model}:generateContent", model)
-                    .header("x-goog-api-key", apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(body)
-                    .retrieve()
-                    .body(GeminiResponse.class);
 
-            String text = extractText(res);
-            if (text.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI không trả về nội dung, hãy thử lại");
+        List<String> models = new ArrayList<>();
+        models.add(model);
+        if (fallbackModel != null && !fallbackModel.isBlank() && !fallbackModel.equals(model)) {
+            models.add(fallbackModel);
+        }
+
+        ResponseStatusException last = new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Không gọi được dịch vụ AI");
+        for (String m : models) {
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    return requestOnce(m, body);
+                } catch (RestClientResponseException e) {
+                    int status = e.getStatusCode().value();
+                    log.warn("Gemini ({}) trả lỗi {} ở lần {}: {}", m, status, attempt, e.getResponseBodyAsString());
+                    last = toStatusException(status);
+                    if (status == 400 || status == 401 || status == 403) throw last;   // key hoặc dữ liệu gửi sai: thử lại vô ích
+                    boolean temporary = status == 429 || status == 500 || status == 503 || status == 504;
+                    if (!temporary) break;                                              // ví dụ 404 sai tên model: sang model khác
+                    if (attempt < 3) pause(attempt * 2000L);
+                } catch (RestClientException e) {
+                    log.warn("Không gọi được Gemini ({})", m, e);
+                    last = new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Không kết nối được dịch vụ AI");
+                    if (attempt < 3) pause(attempt * 2000L);
+                }
             }
-            return text;
-        } catch (RestClientResponseException e) {
-            log.warn("Gemini trả lỗi {}: {}", e.getStatusCode().value(), e.getResponseBodyAsString());
-            if (e.getStatusCode().value() == 429) {
-                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                        "AI đang quá tải hoặc đã hết lượt dùng, hãy thử lại sau ít phút");
-            }
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "Dịch vụ AI trả lỗi (" + e.getStatusCode().value() + ")");
-        } catch (RestClientException e) {
-            log.warn("Không gọi được Gemini", e);
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Không kết nối được dịch vụ AI");
+        }
+        throw last;
+    }
+
+    private String requestOnce(String modelName, Map<String, Object> body) {
+        GeminiResponse res = restClient.post()
+                .uri("/models/{model}:generateContent", modelName)
+                .header("x-goog-api-key", apiKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(GeminiResponse.class);
+        String text = extractText(res);
+        if (text.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI không trả về nội dung, hãy thử lại");
+        }
+        return text;
+    }
+
+    private ResponseStatusException toStatusException(int status) {
+        if (status == 429) {
+            return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "AI đã hết lượt dùng hoặc đang bị giới hạn, hãy thử lại sau ít phút");
+        }
+        if (status == 500 || status == 503 || status == 504) {
+            return new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Máy chủ AI của Google đang quá tải, hãy thử lại sau ít phút");
+        }
+        return new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Dịch vụ AI trả lỗi (" + status + ")");
+    }
+
+    private void pause(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

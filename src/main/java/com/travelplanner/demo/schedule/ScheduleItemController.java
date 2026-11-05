@@ -44,4 +44,13 @@ public class ScheduleItemController {
                                            @Valid @RequestBody UpdateItemRequest request) {
         return itemService.updateItem(id, request);
     }
+    @PatchMapping("/items/{id}/transport")
+    public ScheduleItemResponse updateTransport(@PathVariable Long id,
+                                                @Valid @RequestBody UpdateTransportRequest request) {
+        return itemService.updateTransport(id, request);
+    }
+    @GetMapping("/items/place-ids")
+    public List<Long> usedPlaceIds() {
+        return itemService.getUsedPlaceIds();
+    }
 }

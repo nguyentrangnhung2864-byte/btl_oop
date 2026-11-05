@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Các lịch trình đã tạo | Sổ Tay Lịch Trình Việt Nam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/saved.css">
+</head>
+<body>
+<div class="app-shell">
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <div class="app-main">
+        <header class="hero">
+            <div class="container">
+                <h1>Các lịch trình đã tạo</h1>
+                <p>Xem lại, chỉnh sửa hoặc xóa các lịch trình bạn đã lưu.</p>
+            </div>
+        </header>
+
+        <main class="container">
+            <div id="svMessage" class="sv-message" hidden></div>
+            <p id="svStatus" class="sv-status"></p>
+            <ul id="svList" class="sv-list"></ul>
+        </main>
+    </div>
+</div>
+
+<!-- Bảng chi tiết: các ngày và hoạt động -->
+<dialog id="svDetail" class="sv-dialog">
+    <div class="sv-detail">
+        <h3 id="svDetailTitle"></h3>
+        <p id="svDetailMeta" class="sv-meta"></p>
+        <div id="svDetailBody" class="sv-detail-body"></div>
+        <div class="sv-actions sv-actions-end">
+            <button type="button" id="svDetailEdit" class="sv-btn">Chỉnh sửa</button>
+            <button type="button" id="svDetailClose" class="sv-ghost">Đóng</button>
+        </div>
+    </div>
+</dialog>
+
+<script type="module" src="/js/layout.js"></script>
+<script src="/js/saved.js"></script>
+</body>
+</html>

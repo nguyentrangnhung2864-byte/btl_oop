@@ -33,6 +33,11 @@ public class ScheduleItem {
     public void setDurationHours(double durationHours) { this.durationHours = durationHours; }
     @Column(length = 500)
     private String note;
+    @Column(length = 20)
+    private String transport;
+
+    public String getTransport() { return transport; }
+    public void setTransport(String transport) { this.transport = transport; }
 
     public String getNote() { return note; }
     public void setNote(String note) { this.note = note; }

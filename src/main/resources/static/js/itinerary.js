@@ -17,6 +17,27 @@ const ICON_TRASH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" 
 const ICON_EDIT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 // Mỗi địa điểm trong ngày một màu sáng riêng (tránh màu đỏ vì đỏ dành cho "Trùng giờ")
 const PLACE_COLORS = ['#7CC4FF', '#FFD166', '#7EE0C3', '#B9A3FF', '#FF9CCB', '#B6E88B', '#6FE3F0', '#FFC08A', '#E0A3FF', '#8FE3B0'];
+const TRANSPORTS = {
+    CAR: ['🚗', 'Ô tô'],
+    MOTORBIKE: ['🛵', 'Xe máy'],
+    PLANE: ['✈️', 'Máy bay'],
+    BOAT: ['⛵', 'Thuyền'],
+    TRAIN: ['🚆', 'Tàu hỏa'],
+    BICYCLE: ['🚲', 'Xe đạp'],
+    BUS: ['🚌', 'Xe buýt']
+};
+const SELECTED_KEY = 'selectedPlaces';   // A ghi vào khóa này: [{ placeId, name, city, ... }, ...]
+
+// Trả về mảng id địa điểm A đã gửi, hoặc null nếu không có
+function getSelectedPlaceIds() {
+    try {
+        const list = JSON.parse(localStorage.getItem(SELECTED_KEY));
+        if (!Array.isArray(list)) return null;
+        const ids = list.map(p => Number(p.placeId)).filter(Number.isFinite);
+        return ids.length ? ids : null;
+    } catch (e) { return null; }
+}
+
 function placeColor(index) { return PLACE_COLORS[index % PLACE_COLORS.length]; }
 
 async function api(url, options) {
@@ -34,6 +55,7 @@ async function api(url, options) {
 function showError(msg) {
     const box = $('schMessage');
     box.textContent = msg;
+    box.classList.remove('ok');
     box.hidden = false;
     clearTimeout(showError.timer);
     showError.timer = setTimeout(() => { box.hidden = true; }, 5000);
@@ -358,26 +380,39 @@ async function endDrag() {
 async function loadPlaces() {
     try {
         state.places = await api('/api/places');
-        const select = $('schPlace');
-        select.innerHTML = '';
-        const first = document.createElement('option');
-        first.value = '';
-        first.textContent = '-- Chọn địa điểm --';
-        select.appendChild(first);
-        state.places.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = p.name + ' (' + p.city + ')';
-            select.appendChild(opt);
-        });
-        const citySelect = $('schAiCity');
-        [...new Set(state.places.map(p => p.city))].sort().forEach(city => {
-            const opt = document.createElement('option');
-            opt.value = city;
-            opt.textContent = city;
-            citySelect.appendChild(opt);
-        });
+        const ids = getSelectedPlaceIds();
+        const picked = ids ? state.places.filter(p => ids.includes(p.id)) : [];
+        state.pool = picked.length ? picked : state.places;   // tập địa điểm A gửi (không có thì dùng tất cả)
+        await refreshPlaceOptions();
     } catch (e) { showError(e.message); }
+}
+
+// Lấy lại các địa điểm đã xếp vào lịch rồi dựng lại ô chọn địa điểm
+async function refreshPlaceOptions(includePlaceId) {
+    try {
+        state.usedPlaceIds = new Set(await api('/api/items/place-ids'));
+    } catch (e) {
+        state.usedPlaceIds = new Set();
+    }
+    fillPlaceSelect(includePlaceId);
+}
+
+function fillPlaceSelect(includePlaceId) {
+    const select = $('schPlace');
+    const used = state.usedPlaceIds || new Set();
+    select.innerHTML = '';
+    const available = state.pool.filter(p => !used.has(p.id) || p.id === includePlaceId);
+
+    const first = document.createElement('option');
+    first.value = '';
+    first.textContent = available.length ? '-- Chọn địa điểm --' : '-- Đã xếp hết các địa điểm --';
+    select.appendChild(first);
+    available.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name + ' (' + p.city + ')';
+        select.appendChild(opt);
+    });
 }
 
 async function loadItems() {
@@ -390,7 +425,11 @@ async function loadItems() {
         status.textContent = state.items.length ? '' : 'Chưa có địa điểm nào trong ngày này.';
         const list = $('schList');
         list.innerHTML = '';
-        state.items.forEach((item, index) => list.appendChild(renderItem(item, index)));
+        state.items.forEach((item, index) => {
+            const prev = state.items[index - 1];
+            if (prev && item.distanceFromPreviousKm != null) list.appendChild(renderLeg(prev, item));
+            list.appendChild(renderItem(item, index));
+        });
         renderTimeline(state.items);
         renderDayInfo(state.items);
         applySelection(false);
@@ -473,7 +512,20 @@ function renderItem(item, index) {
     actions.append(edit, del);
 
     row.append(renderThumb(item.placeId, item.placeName), info, actions);
-    card.append(row);
+    // Dấu + dính ở mép dưới thẻ khi thẻ được chọn và có khoảng cách tới địa điểm kế tiếp
+    const next = state.items[index + 1];
+    if (next && next.distanceFromPreviousKm != null) {
+        const plus = document.createElement('button');
+        plus.type = 'button';
+        plus.className = 'sch-transport-plus';
+        plus.textContent = '+';
+        plus.title = 'Chọn phương tiện đến địa điểm kế tiếp';
+        plus.setAttribute('aria-label', 'Chọn phương tiện đến địa điểm kế tiếp');
+        plus.onclick = e => { e.stopPropagation(); openTransportMenu(item, next, plus); };
+        card.append(row, plus);
+    } else {
+        card.append(row);
+    }
     li.append(rail, card);
     li.addEventListener('click', e => {
         if (e.target.closest('button')) return;
@@ -580,7 +632,13 @@ function renderDayInfo(items) {
     title.textContent = 'Thông tin ngày ' + (day ? day.dayNumber : '');
     box.appendChild(title);
 
-    [['Địa điểm', items.length + ' địa điểm'], ['Thời gian tham quan', time]].forEach(([label, value]) => {
+    const rows = [['Địa điểm', items.length + ' địa điểm'], ['Thời gian tham quan', time]];
+    const distances = items.map(i => i.distanceFromPreviousKm).filter(d => d != null);
+    if (distances.length) {
+        const total = Math.round(distances.reduce((a, b) => a + b, 0) * 10) / 10;
+        rows.push(['Quãng đường (chim bay)', '≈ ' + total.toLocaleString('vi-VN') + ' km']);
+    }
+    rows.forEach(([label, value]) => {
         const row = document.createElement('div');
         row.className = 'sch-info-row';
         const l = document.createElement('span');
@@ -679,22 +737,23 @@ function showFormError(msg) {
     p.hidden = !msg;
 }
 
-function openForm(opts = {}) {
+async function openForm(opts = {}) {
     const editing = opts.item || null;
     state.editingItem = editing;
     $('schForm').reset();
     showFormError('');
     $('schFormTitle').textContent = editing ? 'Chỉnh sửa địa điểm' : 'Thêm địa điểm';
     $('schSubmit').textContent = editing ? 'Lưu' : 'Thêm';
+
+    // Khi sửa thì vẫn giữ địa điểm của mục đó trong ô chọn, dù nó đã được xếp
+    await refreshPlaceOptions(editing ? editing.placeId : null);
     $('schPlace').disabled = !!editing;
     $('schPlace').value = editing ? String(editing.placeId) : '';
     $('schDuration').value = editing ? editing.durationHours : 1;
     $('schNote').value = editing ? (editing.note || '') : '';
 
-    // Giờ mặc định: 9h; sửa thì giữ giờ cũ; thêm sau một mục thì bắt đầu khi mục đó kết thúc
     let startMin = 9 * 60;
     if (editing) startMin = toMinutes(editing.startTime);
-
     startMin = Math.min(Math.round(startMin / MINUTE_STEP) * MINUTE_STEP, 24 * 60 - MINUTE_STEP);
 
     $('schDialog').showModal();
@@ -791,8 +850,11 @@ function setAiStatus(text, isError) {
 
 function openAi() {
     state.suggestion = null;
+    state.aiSelected = new Set();
     $('schAiResult').innerHTML = '';
     $('schAiApply').hidden = true;
+    $('schAiPickPanel').hidden = true;
+    renderAiPick();
     setAiStatus('', false);
     $('schAiDialog').showModal();
 }
@@ -824,6 +886,12 @@ function renderSuggestion(data) {
 }
 
 async function generateSuggestion() {
+    const picked = state.aiSelected.size ? [...state.aiSelected] : state.pool.map(p => p.id);
+    if (picked.length < 2) {
+        setAiStatus('Cần ít nhất 2 địa điểm để gợi ý lịch trình.', true);
+        return;
+    }
+
     const btn = $('schAiGenerate');
     btn.disabled = true;
     state.suggestion = null;
@@ -834,9 +902,9 @@ async function generateSuggestion() {
         const data = await api('/api/suggestions', {
             method: 'POST',
             body: JSON.stringify({
-                city: $('schAiCity').value || null,
                 days: Number($('schAiDays').value),
-                preferences: $('schAiPrefs').value
+                preferences: $('schAiPrefs').value,
+                placeIds: picked
             })
         });
         state.suggestion = data;
@@ -885,102 +953,245 @@ async function applySuggestion() {
         btn.disabled = false;
     }
 }
+/* ---------- Chọn địa điểm cho gợi ý AI ---------- */
+
+function updateAiPickLabel() {
+    const n = state.aiSelected.size;
+    $('schAiPickBtn').textContent = n === 0
+        ? 'Tất cả địa điểm đã chọn (' + state.pool.length + ')'
+        : 'Đã chọn ' + n + ' địa điểm';
+}
+
+function renderAiPick() {
+    const panel = $('schAiPickPanel');
+    panel.innerHTML = '';
+
+    const tools = document.createElement('div');
+    tools.className = 'sch-pick-tools';
+    [
+        ['Chọn tất cả', () => state.pool.forEach(p => state.aiSelected.add(p.id))],
+        ['Bỏ chọn tất cả', () => state.aiSelected.clear()]
+    ].forEach(([label, action]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sch-link';
+        b.textContent = label;
+        b.onclick = () => { action(); renderAiPick(); };
+        tools.appendChild(b);
+    });
+    panel.appendChild(tools);
+
+    state.pool.forEach(p => {
+        const row = document.createElement('label');
+        row.className = 'sch-pick-row';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = state.aiSelected.has(p.id);
+        cb.onchange = () => {
+            if (cb.checked) state.aiSelected.add(p.id);
+            else state.aiSelected.delete(p.id);
+            updateAiPickLabel();
+        };
+        const name = document.createElement('span');
+        name.textContent = p.name;
+        const city = document.createElement('small');
+        city.textContent = p.city;
+        row.append(cb, name, city);
+        panel.appendChild(row);
+    });
+    updateAiPickLabel();
+}
 
 $('schOpenAi').addEventListener('click', openAi);
 $('schAiClose').addEventListener('click', () => $('schAiDialog').close());
 $('schAiGenerate').addEventListener('click', generateSuggestion);
 $('schAiApply').addEventListener('click', applySuggestion);
+$('schAiPickBtn').addEventListener('click', () => {
+    const panel = $('schAiPickPanel');
+    panel.hidden = !panel.hidden;
+});
+$('schAiDialog').addEventListener('click', e => {
+    if (!e.target.closest('#schAiPick')) $('schAiPickPanel').hidden = true;   // bấm ra ngoài thì đóng bảng
+});
+/* ---------- Lưu lịch trình ---------- */
 
-/* ---------- Lưu và mở lại lịch trình ---------- */
+const EDIT_KEY = 'sch.editing';   // nhớ bản đã lưu đang được chỉnh sửa (trang "Các lịch trình đã tạo" cũng dùng)
 
-function setSavedStatus(text, isError) {
-    const p = $('schSavedStatus');
-    p.textContent = text;
-    p.className = 'sch-status' + (isError ? ' error' : '');
+function getEditing() {
+    try { return JSON.parse(localStorage.getItem(EDIT_KEY)); } catch (e) { return null; }
 }
 
-async function openSaved() {
-    $('schSaveName').value = '';
-    setSavedStatus('', false);
-    $('schSavedDialog').showModal();
-    await loadSaved();
+function setEditing(value) {
+    if (value) localStorage.setItem(EDIT_KEY, JSON.stringify(value));
+    else localStorage.removeItem(EDIT_KEY);
 }
 
-async function loadSaved() {
-    const list = $('schSavedList');
-    list.innerHTML = '';
+function showNotice(msg) {
+    const box = $('schMessage');
+    box.textContent = msg;
+    box.classList.add('ok');
+    box.hidden = false;
+    clearTimeout(showError.timer);
+    showError.timer = setTimeout(() => { box.hidden = true; box.classList.remove('ok'); }, 4000);
+}
+
+function renderEditingNote() {
+    const box = $('schEditingNote');
+    const editing = getEditing();
+    box.innerHTML = '';
+    box.hidden = !editing;
+    if (!editing) return;
+    const text = document.createElement('span');
+    text.textContent = 'Lịch trình: ' + editing.name + '   ';
+    const fresh = document.createElement('button');
+    fresh.type = 'button';
+    fresh.className = 'sch-link';
+    fresh.textContent = 'Tạo lịch trình mới';
+    fresh.onclick = startNewTrip;
+    box.append(text, fresh);
+}
+
+async function startNewTrip() {
+    if (!confirm('Xóa toàn bộ các ngày đang soạn để bắt đầu lịch trình mới? Các bản đã lưu không bị ảnh hưởng.')) return;
     try {
-        const saved = await api('/api/itineraries');
-        setSavedStatus(saved.length ? '' : 'Chưa có lịch trình nào được lưu.', false);
-        saved.forEach(s => list.appendChild(renderSaved(s)));
-    } catch (e) { setSavedStatus(e.message, true); }
-}
-
-function renderSaved(s) {
-    const li = document.createElement('li');
-    li.className = 'sch-saved';
-
-    const info = document.createElement('div');
-    const name = document.createElement('strong');
-    name.textContent = s.name;
-    const meta = document.createElement('div');
-    meta.className = 'sch-saved-meta';
-    meta.textContent = s.dayCount + ' ngày · ' + s.placeCount + ' địa điểm · ' + new Date(s.savedAt).toLocaleString('vi-VN');
-    info.append(name, meta);
-
-    const actions = document.createElement('div');
-    actions.className = 'sch-saved-actions';
-    const open = document.createElement('button');
-    open.type = 'button';
-    open.className = 'sch-btn';
-    open.textContent = 'Mở';
-    open.onclick = () => openSavedItinerary(s);
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'sch-ghost';
-    del.textContent = 'Xóa';
-    del.onclick = () => deleteSaved(s);
-    actions.append(open, del);
-
-    li.append(info, actions);
-    return li;
-}
-
-async function saveCurrent() {
-    const name = $('schSaveName').value.trim();
-    if (!name) { setSavedStatus('Hãy đặt tên cho lịch trình.', true); return; }
-    try {
-        await api('/api/itineraries', { method: 'POST', body: JSON.stringify({ name }) });
-        $('schSaveName').value = '';
-        await loadSaved();
-        setSavedStatus('Đã lưu "' + name + '".', false);
-    } catch (e) { setSavedStatus(e.message, true); }
-}
-
-async function openSavedItinerary(s) {
-    if (!confirm('Mở "' + s.name + '" sẽ thay thế lịch trình hiện tại. Nếu chưa lưu bản hiện tại thì nó sẽ mất. Tiếp tục?')) return;
-    try {
-        await api('/api/itineraries/' + s.id + '/load', { method: 'POST' });
-        $('schSavedDialog').close();
+        await api('/api/days', { method: 'DELETE' });
+        setEditing(null);
+        renderEditingNote();
         state.activeDayId = null;
         state.selectedItemId = null;
         setLastAction(null);
-        await loadTrip();
         await loadDays();
-    } catch (e) { setSavedStatus(e.message, true); }
+    } catch (e) { showError(e.message); }
 }
 
-async function deleteSaved(s) {
-    if (!confirm('Xóa bản đã lưu "' + s.name + '"?')) return;
+function showSaveError(msg) {
+    const p = $('schSaveError');
+    p.textContent = msg || '';
+    p.hidden = !msg;
+}
+
+function openSaveDialog() {
+    if (!state.days.length) { showError('Chưa có ngày nào để lưu.'); return; }
+    const editing = getEditing();
+    showSaveError('');
+    $('schSaveName').value = editing ? editing.name : '';
+    $('schSaveTitle').textContent = editing ? 'Cập nhật lịch trình' : 'Lưu lịch trình';
+    $('schSaveHint').hidden = !editing;
+    if (editing) {
+        $('schSaveHint').textContent = 'Bạn đang chỉnh sửa "' + editing.name +
+            '". Bấm Cập nhật để ghi đè bản này, hoặc lưu thành một bản mới.';
+    }
+    $('schSaveAsNew').hidden = !editing;
+    $('schSaveConfirm').textContent = editing ? 'Cập nhật' : 'Lưu';
+    $('schSaveDialog').showModal();
+}
+
+async function submitSave(asNew) {
+    const name = $('schSaveName').value.trim();
+    if (!name) { showSaveError('Hãy đặt tên cho lịch trình.'); return; }
+    const editing = getEditing();
     try {
-        await api('/api/itineraries/' + s.id, { method: 'DELETE' });
-        await loadSaved();
-    } catch (e) { setSavedStatus(e.message, true); }
+        const body = JSON.stringify({ name });
+        const saved = (editing && !asNew)
+            ? await api('/api/itineraries/' + editing.id, { method: 'PUT', body })
+            : await api('/api/itineraries', { method: 'POST', body });
+        setEditing({ id: saved.id, name: saved.name });
+        renderEditingNote();
+        $('schSaveDialog').close();
+        showNotice('Đã lưu "' + saved.name + '". Xem tại mục Các lịch trình đã tạo.');
+    } catch (e) {
+        if (editing && !asNew && /Không tìm thấy/.test(e.message)) {
+            setEditing(null);          // bản đã lưu không còn nữa
+            renderEditingNote();
+            showSaveError('Bản đã lưu này không còn tồn tại. Bấm Lưu để tạo bản mới.');
+            $('schSaveConfirm').textContent = 'Lưu';
+            $('schSaveAsNew').hidden = true;
+        } else {
+            showSaveError(e.message);
+        }
+    }
 }
 
-$('schOpenSaved').addEventListener('click', openSaved);
-$('schSavedClose').addEventListener('click', () => $('schSavedDialog').close());
-$('schSaveBtn').addEventListener('click', saveCurrent);
+$('schSave').addEventListener('click', openSaveDialog);
+$('schSaveCancel').addEventListener('click', () => $('schSaveDialog').close());
+$('schSaveConfirm').addEventListener('click', () => submitSave(false));
+$('schSaveAsNew').addEventListener('click', () => submitSave(true));
+$('schSaveName').addEventListener('keydown', e => { if (e.key === 'Enter') submitSave(false); });
+
+// Nhãn giữa hai thẻ: phương tiện của địa điểm phía trên và khoảng cách tới địa điểm kế tiếp
+function renderLeg(prev, next) {
+    const mode = TRANSPORTS[prev.transport];
+    const parts = [];
+    if (mode) parts.push(mode[0] + ' ' + mode[1]);
+    parts.push('≈ ' + next.distanceFromPreviousKm.toLocaleString('vi-VN') + ' km');
+
+    const li = document.createElement('li');
+    li.className = 'sch-leg';
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'sch-leg-chip';
+    chip.textContent = parts.join(' · ');
+    chip.title = 'Chọn phương tiện';
+    chip.onclick = e => { e.stopPropagation(); openTransportMenu(prev, next, chip); };
+    li.appendChild(chip);
+    return li;
+}
+/* ---------- Chọn phương tiện giữa hai địa điểm ---------- */
+
+function closeTransportMenu() {
+    $('schTransportMenu').hidden = true;
+}
+
+function openTransportMenu(prev, next, anchor) {
+    $('schTransportInfo').textContent = prev.placeName + ' → ' + next.placeName + '\n' +
+        'Khoảng cách ≈ ' + next.distanceFromPreviousKm.toLocaleString('vi-VN') + ' km (đường chim bay)';
+
+    const box = $('schTransportOptions');
+    box.innerHTML = '';
+    Object.entries(TRANSPORTS).forEach(([code, [icon, label]]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = icon + ' ' + label + (prev.transport === code ? '  ✓' : '');
+        b.onclick = () => setTransport(prev, code);
+        box.appendChild(b);
+    });
+    if (prev.transport) {
+        const clear = document.createElement('button');
+        clear.type = 'button';
+        clear.textContent = '✕ Bỏ chọn phương tiện';
+        clear.onclick = () => setTransport(prev, null);
+        box.appendChild(clear);
+    }
+
+    const menu = $('schTransportMenu');
+    menu.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    const w = menu.offsetWidth;
+    const h = menu.offsetHeight;
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+    let top = r.bottom + 6;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+}
+
+async function setTransport(item, code) {
+    closeTransportMenu();
+    try {
+        await api('/api/items/' + item.id + '/transport', {
+            method: 'PATCH',
+            body: JSON.stringify({ transport: code })
+        });
+        state.selectedItemId = item.id;   // giữ thẻ đang chọn
+        await loadItems();
+    } catch (e) { showError(e.message); }
+}
+
+document.addEventListener('click', e => {
+    const menu = $('schTransportMenu');
+    if (!menu.hidden && !menu.contains(e.target)) closeTransportMenu();
+});
 
 initWheels();
+renderEditingNote();
 loadTrip().then(() => { loadPlaces(); loadDays(); });

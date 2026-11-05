@@ -12,6 +12,8 @@ public record ScheduleItemResponse(
         String teaser,
         LocalTime startTime,
         double durationHours,
-        String note
+        String note,
+        String transport,
+        Double distanceFromPreviousKm
 ) {
 }

@@ -1,11 +1,9 @@
-<link rel="stylesheet" href="/css/layout.css">
-<link rel="stylesheet" href="/css/itinerary.css">
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>  Lịch Trình | Sổ Tay Lịch Trình Việt Nam</title>
+    <title> Lập Lịch Trình | Sổ Tay Lịch Trình Việt Nam</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet">
@@ -39,11 +37,13 @@
 
             <div class="sch-tabsbar">
                 <div id="schTabs" class="sch-tabs"></div>
-                <button type="button" id="schOpenSaved" class="sch-ghost"> Lịch trình đã lưu</button>
-                <button type="button" id="schOpenAi" class="sch-ai"> Gợi ý lịch trình</button>
+                <div class="sch-topbtns">
+                    <button type="button" id="schSave" class="sch-ghost">💾 Lưu</button>
+                    <button type="button" id="schOpenAi" class="sch-ai">✨ Gợi ý lịch trình</button>
+                </div>
             </div>
+            <p id="schEditingNote" class="sch-hint" hidden></p>
             <p id="schMoveHint" class="sch-hint" hidden>Kéo các ngày để đổi vị trí, bấm "Xong" khi hoàn tất.</p>
-
             <section id="schDaySection" hidden>
                 <div class="sch-toolbar">
                     <h2 id="schDayTitle"></h2>
@@ -115,7 +115,6 @@
         </div>
     </form>
 </dialog>
-
 <!-- Bảng chi tiết địa điểm -->
 <dialog id="schDetail" class="sch-dialog">
     <div class="sch-form">
@@ -128,12 +127,15 @@
 <!-- Bảng gợi ý lịch trình bằng AI -->
 <dialog id="schAiDialog" class="sch-dialog sch-dialog-wide">
     <div class="sch-form">
-        <h3> Gợi ý lịch trình</h3>
+        <h3>✨ Gợi ý lịch trình</h3>
         <div class="sch-row">
-            <label class="sch-field">
-                <span>Thành phố</span>
-                <select id="schAiCity"><option value="">Tất cả</option></select>
-            </label>
+            <div class="sch-field">
+                <span>Địa điểm</span>
+                <div id="schAiPick" class="sch-pick">
+                    <button type="button" id="schAiPickBtn" class="sch-pick-btn"></button>
+                    <div id="schAiPickPanel" class="sch-pick-panel" hidden></div>
+                </div>
+            </div>
             <label class="sch-field">
                 <span>Số ngày (1-5)</span>
                 <input type="number" id="schAiDays" min="1" max="5" value="2">
@@ -152,22 +154,28 @@
         </div>
     </div>
 </dialog>
-<!-- Bảng lưu và mở lại lịch trình -->
-<dialog id="schSavedDialog" class="sch-dialog sch-dialog-wide">
+<!-- Bảng lưu lịch trình -->
+<dialog id="schSaveDialog" class="sch-dialog">
     <div class="sch-form">
-        <h3>Lịch trình đã lưu</h3>
-        <p class="sch-hint" style="margin:0">Lịch trình hiện tại luôn tự lưu. "Lưu" sẽ tạo thêm một bản có tên để mở lại sau.</p>
-        <div class="sch-save-row">
-            <input type="text" id="schSaveName" maxlength="100" placeholder="Đặt tên cho lịch trình hiện tại...">
-            <button type="button" id="schSaveBtn" class="sch-btn">Lưu</button>
-        </div>
-        <p id="schSavedStatus" class="sch-status"></p>
-        <ul id="schSavedList" class="sch-saved-list"></ul>
+        <h3 id="schSaveTitle">Lưu lịch trình</h3>
+        <p id="schSaveHint" class="sch-hint" style="margin:0" hidden></p>
+        <label class="sch-field">
+            <span>Tên lịch trình</span>
+            <input type="text" id="schSaveName" maxlength="100" placeholder="Ví dụ: Chuyến Hà Nội 3 ngày">
+        </label>
+        <p id="schSaveError" class="sch-form-error" hidden></p>
         <div class="sch-form-actions">
-            <button type="button" id="schSavedClose" class="sch-ghost">Đóng</button>
+            <button type="button" id="schSaveCancel" class="sch-ghost">Hủy</button>
+            <button type="button" id="schSaveAsNew" class="sch-ghost" hidden>Lưu thành bản mới</button>
+            <button type="button" id="schSaveConfirm" class="sch-btn">Lưu</button>
         </div>
     </div>
 </dialog>
+<!-- Menu chọn phương tiện giữa hai địa điểm -->
+<div id="schTransportMenu" class="sch-menu sch-transport-menu" hidden>
+    <div id="schTransportInfo" class="sch-transport-info"></div>
+    <div id="schTransportOptions"></div>
+</div>
 <script type="module" src="/js/layout.js"></script>
 <script src="/js/itinerary.js"></script>
 </body>

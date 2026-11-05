@@ -20,10 +20,20 @@ public class SavedItineraryController {
         return service.list();
     }
 
+    @GetMapping("/{id}")
+    public SavedItineraryDetail detail(@PathVariable Long id) {
+        return service.detail(id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SavedItineraryResponse save(@Valid @RequestBody SaveItineraryRequest request) {
         return service.saveCurrent(request.name());
+    }
+
+    @PutMapping("/{id}")
+    public SavedItineraryResponse update(@PathVariable Long id, @Valid @RequestBody SaveItineraryRequest request) {
+        return service.updateFromCurrent(id, request.name());
     }
 
     @PostMapping("/{id}/load")

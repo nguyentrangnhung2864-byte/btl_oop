@@ -7,6 +7,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -34,14 +35,46 @@ public class SavedItineraryService {
         return savedRepository.findAllByOrderBySavedAtDesc().stream().map(this::toResponse).toList();
     }
 
-    /** Sao chép lịch trình hiện tại thành một bản có tên. */
+    @Transactional(readOnly = true)
+    public SavedItineraryDetail detail(Long id) {
+        SavedItinerary saved = savedRepository.findById(id).orElseThrow(() -> notFound(id));
+        List<SavedItineraryDetail.Day> days = new ArrayList<>();
+        for (int i = 0; i < saved.getDayCount(); i++) {
+            final int index = i;
+            List<SavedItineraryDetail.Item> items = saved.getItems().stream()
+                    .filter(it -> it.getDayIndex() == index)
+                    .sorted(Comparator.comparing(SavedItem::getStartTime))
+                    .map(it -> new SavedItineraryDetail.Item(
+                            it.getPlace().getId(), it.getPlace().getName(), it.getPlace().getCity(),
+                            it.getPlace().getCategory(), it.getStartTime(), it.getDurationHours(), it.getNote()))
+                    .toList();
+            days.add(new SavedItineraryDetail.Day(i + 1, items));
+        }
+        return new SavedItineraryDetail(saved.getId(), saved.getName(), saved.getSavedAt(), saved.getStartDate(), days);
+    }
+
+    /** Lưu lịch trình đang soạn thành một bản mới. */
     @Transactional
     public SavedItineraryResponse saveCurrent(String name) {
+        SavedItinerary saved = new SavedItinerary();
+        fillFromCurrent(saved, name);
+        return toResponse(savedRepository.save(saved));
+    }
+
+    /** Ghi đè một bản đã lưu bằng lịch trình đang soạn. */
+    @Transactional
+    public SavedItineraryResponse updateFromCurrent(Long id, String name) {
+        SavedItinerary saved = savedRepository.findById(id).orElseThrow(() -> notFound(id));
+        saved.getItems().clear();
+        fillFromCurrent(saved, name);
+        return toResponse(savedRepository.save(saved));
+    }
+
+    private void fillFromCurrent(SavedItinerary saved, String name) {
         List<Day> days = dayRepository.findAllByOrderByDayNumberAsc();
         if (days.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chưa có ngày nào để lưu");
         }
-        SavedItinerary saved = new SavedItinerary();
         saved.setName(name.trim());
         saved.setSavedAt(LocalDateTime.now());
         saved.setStartDate(tripRepository.findById(TRIP_ID).map(TripSetting::getStartDate).orElse(null));
@@ -58,14 +91,12 @@ public class SavedItineraryService {
                 saved.getItems().add(copy);
             }
         }
-        return toResponse(savedRepository.save(saved));
     }
 
-    /** Thay lịch trình hiện tại bằng một bản đã lưu. */
+    /** Thay lịch trình đang soạn bằng một bản đã lưu. */
     @Transactional
     public void load(Long id) {
-        SavedItinerary saved = savedRepository.findById(id)
-                .orElseThrow(() -> notFound(id));
+        SavedItinerary saved = savedRepository.findById(id).orElseThrow(() -> notFound(id));
 
         dayRepository.deleteAll();     // xóa luôn các mục trong ngày (cascade)
         dayRepository.flush();
