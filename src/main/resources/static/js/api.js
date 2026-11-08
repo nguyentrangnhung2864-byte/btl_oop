@@ -22,11 +22,38 @@ export async function fetchFilterOptions() {
 }
 
 // Nhờ AI giới thiệu địa điểm (refresh = true để tạo lại)
-export async function fetchAiOverview(id, refresh = false) {
-    const res = await fetch(`${BASE_URL}/${id}/ai-overview?refresh=${refresh}`, {
-        method: "POST",
-    });
+// Nhờ AI giới thiệu địa điểm, mỗi lần gọi là một bản viết mới
+export async function fetchAiOverview(id) {
+    const res = await fetch(`${BASE_URL}/${id}/ai-overview`, { method: "POST" });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || "Không tạo được giới thiệu bằng AI");
+    if (!res.ok) {
+        const error = new Error(data.message || "Không tạo được giới thiệu bằng AI");
+        error.status = res.status; // để biết có phải lỗi 401 (chưa đăng nhập) không
+        throw error;
+    }
     return data;
 }
+// Lỗi từ backend: có mã trạng thái và (nếu là lỗi kiểm tra dữ liệu) lỗi theo từng ô
+export class ApiError extends Error {
+    constructor(message, status, errors) {
+        super(message);
+        this.status = status;
+        this.errors = errors || null;
+    }
+}
+
+async function sendJson(url, method, body) {
+    const res = await fetch(url, {
+        method,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+    });
+    if (res.status === 204) return null; // xóa thành công, không có nội dung trả về
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(data.message || "Có lỗi xảy ra", res.status, data.errors);
+    return data;
+}
+
+export const createPlace = (place) => sendJson(BASE_URL, "POST", place);
+export const updatePlace = (id, place) => sendJson(`${BASE_URL}/${id}`, "PUT", place);
+export const deletePlace = (id) => sendJson(`${BASE_URL}/${id}`, "DELETE");

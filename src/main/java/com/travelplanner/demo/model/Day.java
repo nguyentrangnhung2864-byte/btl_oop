@@ -15,6 +15,12 @@ public class Day {
     @OneToMany(mappedBy = "day", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScheduleItem> items = new ArrayList<>();
 
+    // Chủ sở hữu: id người tạo, lấy từ phiên đăng nhập, KHÔNG nhận từ dữ liệu người dùng gửi lên
+    @Column(name = "user_id")
+    private Long userId;
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public int getDayNumber() { return dayNumber; }

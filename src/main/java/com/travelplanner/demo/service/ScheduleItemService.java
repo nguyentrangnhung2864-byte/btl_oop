@@ -1,13 +1,15 @@
+
 package com.travelplanner.demo.service;
 
 import com.travelplanner.demo.dto.*;
 import com.travelplanner.demo.model.Day;
 import com.travelplanner.demo.model.Place;
+import com.travelplanner.demo.model.ScheduleItem;
 import com.travelplanner.demo.repository.DayRepository;
 import com.travelplanner.demo.repository.PlaceRepository;
-import com.travelplanner.demo.model.ScheduleItem;
 import com.travelplanner.demo.repository.ScheduleItemRepository;
 import com.travelplanner.demo.util.GeoUtil;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,97 +27,177 @@ public class ScheduleItemService {
     private final PlaceRepository placeRepository;
     private final ScheduleValidationService validationService;
 
-    public ScheduleItemService(DayRepository dayRepository,
-                               ScheduleItemRepository itemRepository,
-                               PlaceRepository placeRepository,
-                               ScheduleValidationService validationService) {
+    public ScheduleItemService(
+            DayRepository dayRepository,
+            ScheduleItemRepository itemRepository,
+            PlaceRepository placeRepository,
+            ScheduleValidationService validationService) {
+
         this.dayRepository = dayRepository;
         this.itemRepository = itemRepository;
         this.placeRepository = placeRepository;
         this.validationService = validationService;
     }
 
+    // Kiểm tra ngày có thuộc người dùng đang đăng nhập không
+    private Day getOwnedDay(Long dayId, Long userId) {
+        return dayRepository.findByIdAndUserId(dayId, userId)
+                .orElseThrow(() ->
+                        notFound("Không tìm thấy ngày với id " + dayId));
+    }
+
+    // Kiểm tra mục lịch trình có thuộc người dùng đang đăng nhập không
+    private ScheduleItem getOwnedItem(Long id, Long userId) {
+        return itemRepository.findByIdAndDay_UserId(id, userId)
+                .orElseThrow(() ->
+                        notFound("Không tìm thấy mục với id " + id));
+    }
+
+    // Lấy danh sách mục lịch trình theo ngày
     @Transactional(readOnly = true)
-    public List<ScheduleItemResponse> getItemsByDay(Long dayId) {
-        if (!dayRepository.existsById(dayId)) {
-            throw notFound("Không tìm thấy ngày với id " + dayId);
-        }
-        List<ScheduleItem> items = itemRepository.findByDay_IdOrderByStartTimeAsc(dayId);
-        Set<Long> conflictIds = validationService.findConflictIds(items);
+    public List<ScheduleItemResponse> getItemsByDay(
+            Long dayId, Long userId) {
+
+        getOwnedDay(dayId, userId);
+
+        List<ScheduleItem> items =
+                itemRepository.findByDay_IdOrderByStartTimeAsc(dayId);
+
+        Set<Long> conflictIds =
+                validationService.findConflictIds(items);
+
         List<ScheduleItemResponse> result = new ArrayList<>();
         ScheduleItem previous = null;
+
         for (ScheduleItem item : items) {
+
             Double km = previous == null ? null : GeoUtil.distanceKm(
-                    previous.getPlace().getLatitude(), previous.getPlace().getLongitude(),
-                    item.getPlace().getLatitude(), item.getPlace().getLongitude());
-            String travelWarning = validationService.checkTravel(previous, item, km);
-            result.add(toResponse(item, km, conflictIds.contains(item.getId()), travelWarning));
+                    previous.getPlace().getLatitude(),
+                    previous.getPlace().getLongitude(),
+                    item.getPlace().getLatitude(),
+                    item.getPlace().getLongitude()
+            );
+
+            String travelWarning =
+                    validationService.checkTravel(previous, item, km);
+
+            result.add(toResponse(
+                    item,
+                    km,
+                    conflictIds.contains(item.getId()),
+                    travelWarning
+            ));
+
             previous = item;
         }
+
         return result;
     }
 
+    // Thêm địa điểm vào lịch trình
     @Transactional
-    public ScheduleItemResponse addItem(Long dayId, CreateItemRequest request) {
-        Day day = dayRepository.findById(dayId)
-                .orElseThrow(() -> notFound("Không tìm thấy ngày với id " + dayId));
+    public ScheduleItemResponse addItem(
+            Long dayId, CreateItemRequest request, Long userId) {
+
+        Day day = getOwnedDay(dayId, userId);
+
+        // Địa điểm là dữ liệu công khai
         Place place = placeRepository.findById(request.placeId())
-                .orElseThrow(() -> notFound("Không tìm thấy địa điểm với id " + request.placeId()));
+                .orElseThrow(() ->
+                        notFound("Không tìm thấy địa điểm với id "
+                                + request.placeId()));
 
         ScheduleItem item = new ScheduleItem();
+
         item.setDay(day);
         item.setPlace(place);
         item.setStartTime(request.startTime());
         item.setDurationHours(request.durationHours());
         item.setNote(request.note());
+
         return toResponse(itemRepository.save(item));
     }
 
+    // Lấy danh sách ID địa điểm đã được sử dụng bởi người dùng
     @Transactional(readOnly = true)
-    public List<Long> getUsedPlaceIds() {
-        return itemRepository.findUsedPlaceIds();
+    public List<Long> getUsedPlaceIds(Long userId) {
+        return itemRepository.findUsedPlaceIds(userId);
     }
 
+    // Cập nhật mục lịch trình
     @Transactional
-    public ScheduleItemResponse updateItem(Long id, UpdateItemRequest request) {
-        ScheduleItem item = itemRepository.findById(id)
-                .orElseThrow(() -> notFound("Không tìm thấy mục với id " + id));
+    public ScheduleItemResponse updateItem(
+            Long id, UpdateItemRequest request, Long userId) {
+
+        ScheduleItem item = getOwnedItem(id, userId);
+
         item.setStartTime(request.startTime());
         item.setDurationHours(request.durationHours());
         item.setNote(request.note());
+
         return toResponse(item);
     }
 
+    // Cập nhật ghi chú
     @Transactional
-    public ScheduleItemResponse updateNote(Long id, UpdateNoteRequest request) {
-        ScheduleItem item = itemRepository.findById(id)
-                .orElseThrow(() -> notFound("Không tìm thấy mục với id " + id));
+    public ScheduleItemResponse updateNote(
+            Long id, UpdateNoteRequest request, Long userId) {
+
+        ScheduleItem item = getOwnedItem(id, userId);
+
         item.setNote(request.note());
+
         return toResponse(item);
     }
 
+    // Cập nhật phương tiện di chuyển
     @Transactional
-    public void deleteItem(Long id) {
-        if (!itemRepository.existsById(id)) {
-            throw notFound("Không tìm thấy mục với id " + id);
-        }
-        itemRepository.deleteById(id);
+    public ScheduleItemResponse updateTransport(
+            Long id, UpdateTransportRequest request, Long userId) {
+
+        ScheduleItem item = getOwnedItem(id, userId);
+
+        item.setTransport(request.transport());
+
+        return toResponse(item);
     }
 
+    // Xóa mục lịch trình
+    @Transactional
+    public void deleteItem(Long id, Long userId) {
+
+        ScheduleItem item = getOwnedItem(id, userId);
+
+        itemRepository.delete(item);
+    }
+
+    // Trả về lỗi 404
     private ResponseStatusException notFound(String message) {
-        return new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        return new ResponseStatusException(
+                HttpStatus.NOT_FOUND, message);
     }
 
-    // Dùng cho thêm, sửa: các thao tác này không tính khoảng cách
+    // Dùng cho thêm, sửa: kiểm tra lại lịch trình sau khi thay đổi
     private ScheduleItemResponse toResponse(ScheduleItem item) {
-        itemRepository.flush(); // đảm bảo thay đổi vừa lưu đã nằm trong database trước khi kiểm tra
-        boolean conflict = validationService.findConflictIdsByDay(item.getDay().getId()).contains(item.getId());
+
+        itemRepository.flush();
+
+        boolean conflict = validationService
+                .findConflictIdsByDay(item.getDay().getId())
+                .contains(item.getId());
+
         return toResponse(item, null, conflict, null);
     }
 
-    private ScheduleItemResponse toResponse(ScheduleItem item, Double distanceFromPreviousKm,
-                                            boolean conflict, String travelWarning) {
+    // Tạo response đầy đủ thông tin lịch trình
+    private ScheduleItemResponse toResponse(
+            ScheduleItem item,
+            Double distanceFromPreviousKm,
+            boolean conflict,
+            String travelWarning) {
+
         Place place = item.getPlace();
+
         return new ScheduleItemResponse(
                 item.getId(),
                 place.getId(),
@@ -133,14 +215,7 @@ public class ScheduleItemService {
                 place.getOpenTime(),
                 place.getCloseTime(),
                 validationService.isOutsideOpeningHours(item),
-                travelWarning);
-    }
-
-    @Transactional
-    public ScheduleItemResponse updateTransport(Long id, UpdateTransportRequest request) {
-        ScheduleItem item = itemRepository.findById(id)
-                .orElseThrow(() -> notFound("Không tìm thấy mục với id " + id));
-        item.setTransport(request.transport());
-        return toResponse(item);
+                travelWarning
+        );
     }
 }

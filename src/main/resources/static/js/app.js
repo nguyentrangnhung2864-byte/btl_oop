@@ -2,6 +2,7 @@ import { fetchPlaces, fetchFilterOptions, fetchAiOverview } from "./api.js";
 import { createPlaceImage } from "./placeImage.js";
 import { isSelected, addPlace, removePlace, onChange } from "./selection.js";
 import "./tripPanel.js";
+import { openAuthModal } from "./authModal.js";
 
 // ---- Lấy các phần tử trên trang ----
 const keywordInput = document.getElementById("keyword");
@@ -203,16 +204,23 @@ async function loadAiOverview() {
     aiError.hidden = true;
 
     try {
-        // Đã có bản giới thiệu mà vẫn bấm nghĩa là muốn tạo lại
-        const data = await fetchAiOverview(place.id, Boolean(place.aiOverview));
-        place.aiOverview = data.overview; // nhớ lại để mở lần sau không phải gọi nữa
-        if (currentPlace === place) showAiState(place);
+        const data = await fetchAiOverview(place.id);
+        if (currentPlace !== place) return; // người dùng đã đóng hoặc chuyển sang địa điểm khác
+        aiText.textContent = data.overview;
+        aiText.hidden = false;
+        aiBtn.textContent = "Tạo lại";
     } catch (e) {
-        if (currentPlace !== place) return; // người dùng đã chuyển sang địa điểm khác
-        aiError.textContent = e.message;
-        aiError.hidden = false;
-        aiBtn.disabled = false;
-        aiBtn.textContent = place.aiOverview ? "Tạo lại" : "Giới thiệu bằng AI";
+        if (currentPlace !== place) return;
+        aiBtn.textContent = aiText.hidden ? "Giới thiệu bằng AI" : "Tạo lại";
+        if (e.status === 401) {
+            // Chưa đăng nhập: hiện cửa sổ đăng nhập, xong thì tự tạo giới thiệu luôn
+            openAuthModal("login", () => loadAiOverview());
+        } else {
+            aiError.textContent = e.message;
+            aiError.hidden = false;
+        }
+    } finally {
+        if (currentPlace === place) aiBtn.disabled = false;
     }
 }
 

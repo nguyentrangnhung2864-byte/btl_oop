@@ -15,6 +15,10 @@ public class SavedItinerary {
     @Column(nullable = false, length = 100)
     private String name;
 
+    // Chủ sở hữu: id người tạo, lấy từ phiên đăng nhập, KHÔNG nhận từ dữ liệu người dùng gửi lên
+    @Column(name = "user_id")
+    private Long userId;
+
     private LocalDateTime savedAt;
     private LocalDate startDate;
     private int dayCount;
@@ -22,6 +26,8 @@ public class SavedItinerary {
     @OneToMany(mappedBy = "itinerary", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SavedItem> items = new ArrayList<>();
 
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
