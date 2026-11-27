@@ -10,3 +10,10 @@ spring.jpa.show-sql=true
 gemini.api-key=${GEMINI_API_KEY:}
 gemini.model=gemini-3.5-flash-lite
 gemini.fallback-model=gemini-2.5-flash
+
+# Đăng nhập
+app.auth.enabled=${AUTH_ENABLED:true}
+app.admin.email=${ADMIN_EMAIL:}
+app.admin.password=${ADMIN_PASSWORD:}
+server.servlet.session.cookie.same-site=lax
+server.servlet.session.timeout=8h

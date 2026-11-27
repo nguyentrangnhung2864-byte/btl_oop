@@ -1,5 +1,6 @@
 package com.travelplanner.demo.model;
 import jakarta.persistence.*;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "place")
@@ -26,6 +27,10 @@ public class Place {
     private Double latitude;   // vĩ độ
 
     private Double longitude;  // kinh độ
+
+    // Giờ mở và đóng cửa. Để trống (null) nghĩa là không giới hạn giờ (mở cả ngày)
+    private LocalTime openTime;
+    private LocalTime closeTime;
 
     // Bắt buộc phải có constructor rỗng để JPA hoạt động
     public Place() {
@@ -96,4 +101,20 @@ public class Place {
         this.longitude = longitude;
     }
 
+
+    public LocalTime getOpenTime() {
+        return openTime;
+    }
+
+    public void setOpenTime(LocalTime openTime) {
+        this.openTime = openTime;
+    }
+
+    public LocalTime getCloseTime() {
+        return closeTime;
+    }
+
+    public void setCloseTime(LocalTime closeTime) {
+        this.closeTime = closeTime;
+    }
 }

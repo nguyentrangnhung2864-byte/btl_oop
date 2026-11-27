@@ -30,6 +30,10 @@ public class DataSeeder implements CommandLineRunner {
         if (placeRepository.existsByLatitudeIsNull()) {
             runScript("place-coordinates.sql");
         }
+        // Chưa địa điểm nào có giờ mở cửa thì nạp giờ mở/đóng cửa mẫu
+        if (!placeRepository.existsByOpenTimeIsNotNull()) {
+            runScript("place-hours.sql");
+        }
     }
 
     private void runScript(String fileName) {

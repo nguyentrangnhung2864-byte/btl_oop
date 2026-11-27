@@ -14,6 +14,11 @@ public record ScheduleItemResponse(
         double durationHours,
         String note,
         String transport,
-        Double distanceFromPreviousKm
+        Double distanceFromPreviousKm,
+        boolean conflict,
+        LocalTime openTime,
+        LocalTime closeTime,
+        boolean outsideOpeningHours,
+        String travelWarning
 ) {
 }

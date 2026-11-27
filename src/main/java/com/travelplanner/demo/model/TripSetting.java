@@ -7,7 +7,7 @@ import java.time.LocalDate;
 @Entity
 public class TripSetting {
     @Id
-    private Long id;          // luôn là 1, vì chỉ có một chuyến đi
+    private Long id;           // chính là id của người dùng: mỗi người một dòng
 
     private LocalDate startDate;
 
